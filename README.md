@@ -20,7 +20,6 @@
       	# 채널에 체인코드를 구현
       down - Bring down the network
       	# 네트워크를 닫음
-
     Flags:
     Used with network.sh up, network.sh createChannel:
     -ca <use CAs> -  Use Certificate Authorities to generate network crypto material
