@@ -1,14 +1,45 @@
 [//]: # (SPDX-License-Identifier: CC-BY-4.0)
 
-# Hyperledger Fabric Samples
+# ST-POC Hyperledger Fabric Next.js Application
 
 [![Build Status](https://dev.azure.com/Hyperledger/Fabric-Samples/_apis/build/status/Fabric-Samples?branchName=main)](https://dev.azure.com/Hyperledger/Fabric-Samples/_build/latest?definitionId=28&branchName=main)
 
-You can use Fabric samples to get started working with Hyperledger Fabric, explore important Fabric features, and learn how to build applications that can interact with blockchain networks using the Fabric SDKs. To learn more about Hyperledger Fabric, visit the [Fabric documentation](https://hyperledger-fabric.readthedocs.io/en/latest).
+- [Fabric documentation](https://hyperledger-fabric.readthedocs.io/en/latest).
+- [Fabric prerequisites](https://hyperledger-fabric.readthedocs.io/en/latest/prereqs.html)
+- [Install the Fabric Samples, Binaries, and Docker Images](https://hyperledger-fabric.readthedocs.io/en/latest/install.html) 
 
-## Getting started with the Fabric samples
+## ./network.sh -h
+~~
+      up - Bring up Fabric orderer and peer nodes. No channel is created
+      	# 오더러와 피어 노드를 네트워크에 올림
+      up createChannel - Bring up fabric network with one channel
+      	# 채널을 네트워크에 올림
+      createChannel - Create and join a channel after the network is created
+      	# 네트워크가 생성된 후 채널을 생성하고 참여 시킴
+      deployCC - Deploy a chaincode to a channel (defaults to asset-transfer-basic)
+      	# 채널에 체인코드를 구현
+      down - Bring down the network
+      	# 네트워크를 닫음
 
-To use the Fabric samples, you need to download the Fabric Docker images and the Fabric CLI tools. First, make sure that you have installed all of the [Fabric prerequisites](https://hyperledger-fabric.readthedocs.io/en/latest/prereqs.html). You can then follow the instructions to [Install the Fabric Samples, Binaries, and Docker Images](https://hyperledger-fabric.readthedocs.io/en/latest/install.html) in the Fabric documentation. In addition to downloading the Fabric images and tool binaries, the Fabric samples will also be cloned to your local machine.
+    Flags:
+    Used with network.sh up, network.sh createChannel:
+    -ca <use CAs> -  Use Certificate Authorities to generate network crypto material
+    	# 인증 기관을 통해 네트워크 암호화 생성
+    -c <channel name> - Name of channel to create (defaults to "mychannel")
+    	# 만들 채널 이름 지정
+    -s <dbtype> - Peer state database to deploy: goleveldb (default) or couchdb
+    	# 배포할 피어 상태의 데이터 베이스 
+    -r <max retry> - CLI times out after certain number of attempts (defaults to 5)
+    	# 특정 횟수의 시도 후 CLI 시간 초과
+    -d <delay> - CLI delays for a certain number of seconds (defaults to 3)
+    	# 특정 시간 동안 CLI 지연
+    -i <imagetag> - Docker image tag of Fabric to deploy (defaults to "latest")
+    	# 배포할 Fabric의 Docker 이미지 태그
+    -cai <ca_imagetag> - Docker image tag of Fabric CA to deploy (defaults to "latest")
+    	# 배포할 Fabric CA 의 Docker 이미지 태그
+    -verbose - Verbose mode
+    	# 상세 모드
+~~
 
 ## Test network
 
