@@ -9,7 +9,8 @@
 - [Install the Fabric Samples, Binaries, and Docker Images](https://hyperledger-fabric.readthedocs.io/en/latest/install.html) 
 
 ## ./network.sh -h
-~~
+
+Command:
       up - Bring up Fabric orderer and peer nodes. No channel is created
       	# 오더러와 피어 노드를 네트워크에 올림
       up createChannel - Bring up fabric network with one channel
@@ -20,7 +21,7 @@
       	# 채널에 체인코드를 구현
       down - Bring down the network
       	# 네트워크를 닫음
-    Flags:
+Flags:
     Used with network.sh up, network.sh createChannel:
     -ca <use CAs> -  Use Certificate Authorities to generate network crypto material
     	# 인증 기관을 통해 네트워크 암호화 생성
@@ -38,7 +39,6 @@
     	# 배포할 Fabric CA 의 Docker 이미지 태그
     -verbose - Verbose mode
     	# 상세 모드
-~~
 
 ## Test network
 
