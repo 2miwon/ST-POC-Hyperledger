@@ -174,7 +174,7 @@ function createOrgs() {
     fi
     infoln "Generating certificates using cryptogen tool"
 
-    # makeCert "$agency"
+    makeCert "$agency"
     # infoln "Creating Agency Identities"
     # set -x
     # cryptogen generate --config=./organizations/cryptogen/crypto-config-agency.yaml --output="organizations"
