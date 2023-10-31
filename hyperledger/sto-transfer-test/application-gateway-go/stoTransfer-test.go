@@ -27,7 +27,7 @@ import (
 
 const (
 	mspID        = "Org1MSP"
-	cryptoPath   = "/home/admin/st-poc-hyperledger/hyperledger/dev-network/organizations/peerOrganizations/org1.example.com"
+	cryptoPath   = "/home/admin/st-poc-hyperledger/hyperledger/sto-test-network/organizations/peerOrganizations/org1.example.com"
 	certPath     = cryptoPath + "/users/User1@org1.example.com/msp/signcerts/cert.pem"
 	keyPath      = cryptoPath + "/users/User1@org1.example.com/msp/keystore/"
 	tlsCertPath  = cryptoPath + "/peers/peer0.org1.example.com/tls/ca.crt"
@@ -36,7 +36,7 @@ const (
 )
 
 var now = time.Now()
-var assetId = fmt.Sprintf("asset%d", now.Unix()*1e3+int64(now.Nanosecond())/1e6)
+var transactionId = fmt.Sprintf("asset%d", now.Unix()*1e3+int64(now.Nanosecond())/1e6)
 
 func main() {
 	// The gRPC client connection should be shared by all Gateway connections to this endpoint
@@ -77,10 +77,9 @@ func main() {
 	contract := network.GetContract(chaincodeName)
 
 	initLedger(contract)
-	getAllAssets(contract)
-	createAsset(contract)
-	readAssetByID(contract)
-	transferAssetAsync(contract)
+	getAllAccounts(contract)
+	createAccount(contract)
+	readAccountByAddress(contract)
 	exampleErrorHandling(contract)
 }
 
@@ -155,7 +154,7 @@ func newSign() identity.Sign {
 // This type of transaction would typically only be run once by an application the first time it was started after its
 // initial deployment. A new version of the chaincode deployed later would likely not need to run an "init" function.
 func initLedger(contract *client.Contract) {
-	fmt.Printf("\n--> Submit Transaction: InitLedger, function creates the initial set of assets on the ledger \n")
+	fmt.Printf("\n--> Submit Transaction: InitLedger, function creates the initial set of accounts on the ledger \n")
 
 	_, err := contract.SubmitTransaction("InitLedger")
 	if err != nil {
@@ -165,11 +164,10 @@ func initLedger(contract *client.Contract) {
 	fmt.Printf("*** Transaction committed successfully\n")
 }
 
-// Evaluate a transaction to query ledger state.
-func getAllAssets(contract *client.Contract) {
-	fmt.Println("\n--> Evaluate Transaction: GetAllAssets, function returns all the current assets on the ledger")
+func getAllAccounts(contract *client.Contract) {
+	fmt.Println("\n--> Evaluate Transaction: GetAllAccounts, function returns all the current accounts on the ledger")
 
-	evaluateResult, err := contract.EvaluateTransaction("GetAllAssets")
+	evaluateResult, err := contract.EvaluateTransaction("GetAllAccounts")
 	if err != nil {
 		panic(fmt.Errorf("failed to evaluate transaction: %w", err))
 	}
@@ -179,10 +177,10 @@ func getAllAssets(contract *client.Contract) {
 }
 
 // Submit a transaction synchronously, blocking until it has been committed to the ledger.
-func createAsset(contract *client.Contract) {
-	fmt.Printf("\n--> Submit Transaction: CreateAsset, creates new asset with ID, Size, Owner and AppraisedValue arguments \n")
+func createAccount(contract *client.Contract) {
+	fmt.Printf("\n--> Submit Transaction: CreateAccount, creates new account with Address, FiatBalance, StBalance \n")
 
-	_, err := contract.SubmitTransaction("CreateAsset", assetId, "5", "Tom", "1300")
+	_, err := contract.SubmitTransaction("CreateAccount", "user2", "1000000", "0")
 	if err != nil {
 		panic(fmt.Errorf("failed to submit transaction: %w", err))
 	}
@@ -191,10 +189,10 @@ func createAsset(contract *client.Contract) {
 }
 
 // Evaluate a transaction by assetID to query ledger state.
-func readAssetByID(contract *client.Contract) {
-	fmt.Printf("\n--> Evaluate Transaction: ReadAsset, function returns asset attributes\n")
+func readAccountByAddress(contract *client.Contract) {
+	fmt.Printf("\n--> Evaluate Transaction: ReadAccount, function returns account attributes\n")
 
-	evaluateResult, err := contract.EvaluateTransaction("ReadAsset", assetId)
+	evaluateResult, err := contract.EvaluateTransaction("ReadAccount", "user2")
 	if err != nil {
 		panic(fmt.Errorf("failed to evaluate transaction: %w", err))
 	}
@@ -205,31 +203,31 @@ func readAssetByID(contract *client.Contract) {
 
 // Submit transaction asynchronously, blocking until the transaction has been sent to the orderer, and allowing
 // this thread to process the chaincode response (e.g. update a UI) without waiting for the commit notification
-func transferAssetAsync(contract *client.Contract) {
-	fmt.Printf("\n--> Async Submit Transaction: TransferAsset, updates existing asset owner")
+// func transferAssetAsync(contract *client.Contract) {
+// 	fmt.Printf("\n--> Async Submit Transaction: TransferAsset, updates existing asset owner")
 
-	submitResult, commit, err := contract.SubmitAsync("TransferAsset", client.WithArguments(assetId, "Mark"))
-	if err != nil {
-		panic(fmt.Errorf("failed to submit transaction asynchronously: %w", err))
-	}
+// 	submitResult, commit, err := contract.SubmitAsync("TransferAsset", client.WithArguments(assetId, "Mark"))
+// 	if err != nil {
+// 		panic(fmt.Errorf("failed to submit transaction asynchronously: %w", err))
+// 	}
 
-	fmt.Printf("\n*** Successfully submitted transaction to transfer ownership from %s to Mark. \n", string(submitResult))
-	fmt.Println("*** Waiting for transaction commit.")
+// 	fmt.Printf("\n*** Successfully submitted transaction to transfer ownership from %s to Mark. \n", string(submitResult))
+// 	fmt.Println("*** Waiting for transaction commit.")
 
-	if commitStatus, err := commit.Status(); err != nil {
-		panic(fmt.Errorf("failed to get commit status: %w", err))
-	} else if !commitStatus.Successful {
-		panic(fmt.Errorf("transaction %s failed to commit with status: %d", commitStatus.TransactionID, int32(commitStatus.Code)))
-	}
+// 	if commitStatus, err := commit.Status(); err != nil {
+// 		panic(fmt.Errorf("failed to get commit status: %w", err))
+// 	} else if !commitStatus.Successful {
+// 		panic(fmt.Errorf("transaction %s failed to commit with status: %d", commitStatus.TransactionID, int32(commitStatus.Code)))
+// 	}
 
-	fmt.Printf("*** Transaction committed successfully\n")
-}
+// 	fmt.Printf("*** Transaction committed successfully\n")
+// }
 
 // Submit transaction, passing in the wrong number of arguments ,expected to throw an error containing details of any error responses from the smart contract.
 func exampleErrorHandling(contract *client.Contract) {
-	fmt.Println("\n--> Submit Transaction: UpdateAsset asset70, asset70 does not exist and should return an error")
+	fmt.Println("\n--> Submit Transaction: UpdateAcoount user70, user70 does not exist and should return an error")
 
-	_, err := contract.SubmitTransaction("UpdateAsset", "asset70", "5", "Tomoko", "300")
+	_, err := contract.SubmitTransaction("UpdateAccount", "user70", "1000", "10")
 	if err == nil {
 		panic("******** FAILED to return an error")
 	}
