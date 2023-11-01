@@ -2,7 +2,7 @@ const {google} = require('googleapis');
 // const {authenticate} = require('@google-cloud/local-auth');
 
 // initialize the Youtube API
-const API_KEY = "AIzaSyAWRpU8Ec4XHLYJmjZz0xZ7tTnSiek6Flw";
+const API_KEY = YOUTUBE_API_KEY;
 const youtube = google.youtube({
   version: "v3",
   auth: API_KEY
