@@ -76,6 +76,33 @@ func (s *SmartContract) ProcessTransferBatch(ctx contractapi.TransactionContextI
 	return nil
 }
 
+func (s *SmartContract) processTransfer(ctx contractapi.TransactionContextInterface, accounts map[string]*Account, transfer Transfer) (error) {
+	//verify balance
+	err := s.verifySufficientBalance(ctx, accounts, transfer)
+	if err != nil {
+		return fmt.Errorf("Error while verifying transfer %s: %v", transfer.TransferId, err)
+	}
+	stID := transfer.ST_ID
+	fromAccount, _ := accounts[transfer.FromAddress]
+	toAccount, _ := accounts[transfer.ToAddress]
+	// Use reflection to access the ST field based on stID
+	fromSTField := reflect.ValueOf(fromAccount).Elem().FieldByName(stID)
+	toSTField := reflect.ValueOf(toAccount).Elem().FieldByName(stID)
+	fromST := fromSTField.Interface().(float64)
+	toST := toSTField.Interface().(float64)
+	//update st balance
+	fromST -= transfer.Size
+	toST += transfer.Size
+	fromSTValue := reflect.ValueOf(fromST)
+	toSTValue := reflect.ValueOf(toST)
+	fromSTField.Set(fromSTValue)
+	toSTField.Set(toSTValue)
+	//update fiat balance
+	fromAccount.Fiat += transfer.Size * transfer.Price
+	toAccount.Fiat -= transfer.Size * transfer.Price
+	return nil
+}
+
 func (s *SmartContract) CreateTransfersInBatch(ctx contractapi.TransactionContextInterface, transferJSONBatchString string) (error) {
 	transfers, _ := s.unmarshalTransferBatchString(transferJSONBatchString)
     for _, transfer := range transfers {
@@ -116,32 +143,6 @@ func (s *SmartContract) unmarshalTransferBatchString(transferBatchString string)
 	return transfers, nil
 }
 
-func (s *SmartContract) processTransfer(ctx contractapi.TransactionContextInterface, accounts map[string]*Account, transfer Transfer) (error) {
-	//verify balance
-	err := s.verifySufficientBalance(ctx, accounts, transfer)
-	if err != nil {
-		return fmt.Errorf("Error while verifying transfer %s: %v", transfer.TransferId, err)
-	}
-	stID := transfer.ST_ID
-	fromAccount, _ := accounts[transfer.FromAddress]
-	toAccount, _ := accounts[transfer.ToAddress]
-	// Use reflection to access the ST field based on stID
-	fromSTField := reflect.ValueOf(&fromAccount).Elem().FieldByName(stID)
-	toSTField := reflect.ValueOf(&toAccount).Elem().FieldByName(stID)
-	fromST := fromSTField.Interface().(float64)
-	toST := toSTField.Interface().(float64)
-	//update st balance
-	fromST -= transfer.Size
-	toST += transfer.Size
-	fromSTValue := reflect.ValueOf(fromST)
-	toSTValue := reflect.ValueOf(toST)
-	fromSTField.Set(fromSTValue)
-	toSTValue.Set(toSTValue)
-	//update fiat balance
-	fromAccount.Fiat += transfer.Size * transfer.Price
-	toAccount.Fiat -= transfer.Size * transfer.Price
-	return nil
-}
 
 func (s *SmartContract) verifySufficientBalance(ctx contractapi.TransactionContextInterface, 
 	accounts map[string]*Account, transfer Transfer) (error) {
