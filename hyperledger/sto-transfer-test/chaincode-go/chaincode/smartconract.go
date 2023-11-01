@@ -16,14 +16,14 @@ type SmartContract struct {
 // golang keeps the order when marshal to json but doesn't order automatically
 type Account struct {
 	Address        string     `json:"Address"`
-	Fiat           float64    `json:Fiat`
+	Fiat           float64    `json:"Fiat"`
 	ST_1           float64    `json:"ST_1"`
 }
 
 type Transfer struct {
 	FromAddress         string  `json:"FromAddress"`
 	Price               float64 `json:"Price"`
-	ST_ID               string  `json: ST_ID`
+	ST_ID               string  `json:"ST_ID"`
 	Size                float64 `json:"Size"`
 	TransferId          string  `json:"TransferId"`
 	ToAddress           string  `json:"ToAddress"`
@@ -85,9 +85,25 @@ func (s *SmartContract) ProcessBatchTransfers(ctx contractapi.TransactionContext
 		if err != nil {
 			return fmt.Errorf("Error while processing transfer %s: %v", transfer.TransferId, err)
 		}
+
+		transferJSON, jsonErr := json.Marshal(transfer)
+		if jsonErr != nil {
+			return fmt.Errorf("Error while marshalling transfer %s: %v", transfer.TransferId, jsonErr)
+		}
+		// 각 전송 항목을 처리한 후에 PutState를 호출
+		putStateErr := ctx.GetStub().PutState(transfer.TransferId, transferJSON)
+		if putStateErr  != nil {
+			return fmt.Errorf("Error while calling PutState for transfer %s: %v", transfer.TransferId, putStateErr) 
+		}
 	}
-	return nil
+	for address, account := range accounts {
+		err := s.UpdateAccountByObject(ctx, *account)
+		if err != nil {
+			return fmt.Errorf("Error while updating account %s: %v", address, err)
+		}
+	}
 	
+	return nil	
 }
 
 func (s *SmartContract) processTransfer(ctx contractapi.TransactionContextInterface, accounts map[string]*Account, transfer Transfer) (error) {
@@ -140,8 +156,6 @@ func (s *SmartContract) verifySufficientBalance(ctx contractapi.TransactionConte
 
 	return nil
 }
-
-
 
 func (a *Account) getSTBalance( stID string) (float64, error) {
     // Account 구조체를 reflection을 사용하여 탐색
@@ -205,7 +219,27 @@ func (s *SmartContract) ReadAccount(ctx contractapi.TransactionContextInterface,
 }
 
 // UpdateAccount updates an existing account in the world state with provaddressed parameters.
-func (s *SmartContract) UpdateAccount(ctx contractapi.TransactionContextInterface, address string, fiat float64, st_1 float64) error {
+func (s *SmartContract) UpdateAccountByObject(ctx contractapi.TransactionContextInterface, account Account) error {
+	exists, err := s.AccountExists(ctx, account.Address)
+	if err != nil {
+		return err
+	}
+	if !exists {
+		return fmt.Errorf("the account %s does not exist", account.Address)
+	}
+
+	// overwriting original account with new account
+
+	accountJSON, err := json.Marshal(account)
+	if err != nil {
+		return err
+	}
+
+	return ctx.GetStub().PutState(account.Address, accountJSON)
+}
+
+// UpdateAccount updates an existing account in the world state with provaddressed parameters.
+func (s *SmartContract) UpdateAccountByParams(ctx contractapi.TransactionContextInterface, address string, fiat float64, st_1 float64) error {
 	exists, err := s.AccountExists(ctx, address)
 	if err != nil {
 		return err

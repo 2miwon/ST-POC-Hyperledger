@@ -178,7 +178,7 @@ func getAllAccounts(contract *client.Contract) {
 
 // Submit a transaction synchronously, blocking until it has been committed to the ledger.
 func createAccount(contract *client.Contract) {
-	fmt.Printf("\n--> Submit Transaction: CreateAccount, creates new account with Address, FiatBalance, StBalance \n")
+	fmt.Printf("\n--> Submit Transaction: CreateAccount, creates new account with Address, Fiat, ST_1 \n")
 
 	_, err := contract.SubmitTransaction("CreateAccount", "user2", "1000000", "0")
 	if err != nil {
@@ -200,6 +200,12 @@ func readAccountByAddress(contract *client.Contract) {
 
 	fmt.Printf("*** Result:%s\n", result)
 }
+
+func submitBatchTransfers(contract *client.Contract) {
+	fmt.Printf("\n--> Submit Transactions in Batch: Make transfer logs, updates account balance")
+
+
+
 
 // Submit transaction asynchronously, blocking until the transaction has been sent to the orderer, and allowing
 // this thread to process the chaincode response (e.g. update a UI) without waiting for the commit notification
@@ -227,7 +233,7 @@ func readAccountByAddress(contract *client.Contract) {
 func exampleErrorHandling(contract *client.Contract) {
 	fmt.Println("\n--> Submit Transaction: UpdateAcoount user70, user70 does not exist and should return an error")
 
-	_, err := contract.SubmitTransaction("UpdateAccount", "user70", "1000", "10")
+	_, err := contract.SubmitTransaction("UpdateAccountByParams", "user70", "1000", "10")
 	if err == nil {
 		panic("******** FAILED to return an error")
 	}
