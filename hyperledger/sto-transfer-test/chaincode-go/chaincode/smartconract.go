@@ -51,34 +51,7 @@ func (s *SmartContract) InitLedger(ctx contractapi.TransactionContextInterface) 
 	return nil
 }
 
-func (s *SmartContract) CreateTransfer(ctx contractapi.TransactionContextInterface, 
-	transferId string, stId string, fromAddress string, toAddress string, size float64, price float64) error {
-	exists, err := s.TransferExists(ctx, transferId)
-	if err != nil {
-		return err
-	}
-	if exists {
-		return fmt.Errorf("the transferId for transfer %s already exists", transferId)
-	}
-
-	transfer :=  Transfer {
-		FromAddress:   fromAddress,
-		Price:         price,
-		ST_ID:         stId,
-		Size:          size,
-		TransferId:    transferId,
-		ToAddress:     toAddress,
-	}
-
-	transferJSON, err := json.Marshal(transfer)
-	if err != nil {
-		return err
-	}
-
-	return ctx.GetStub().PutState(transferId, transferJSON)
-}
-
-func (s *SmartContract) ProcessBatchTransfers(ctx contractapi.TransactionContextInterface, transfers []Transfer) (error) {
+func (s *SmartContract) ProcessTransferBatch(ctx contractapi.TransactionContextInterface, transfers []Transfer) (error) {
 	accounts, _ := s.GetAllAccounts(ctx)
 	for _, transfer := range transfers {
 		err := s.processTransfer(ctx, accounts, transfer)
@@ -91,13 +64,14 @@ func (s *SmartContract) ProcessBatchTransfers(ctx contractapi.TransactionContext
 			return fmt.Errorf("Error while marshalling transfer %s: %v", transfer.TransferId, jsonErr)
 		}
 		// 각 전송 항목을 처리한 후에 PutState를 호출
-		putStateErr := ctx.GetStub().PutState(transfer.TransferId, transferJSON)
-		if putStateErr  != nil {
-			return fmt.Errorf("Error while calling PutState for transfer %s: %v", transfer.TransferId, putStateErr) 
-		}
+		// LevelDB에 두가지 데이터타입을 동시에 올렸을 때, 어떻게 특정 데이터타입만 리드할지 고민 필요
+		// putStateErr := ctx.GetStub().PutState(transfer.TransferId, transferJSON)
+		// if putStateErr  != nil {
+		// 	return fmt.Errorf("Error while calling PutState for transfer %s: %v", transfer.TransferId, putStateErr) 
+		// }
 	}
 	for address, account := range accounts {
-		err := s.UpdateAccountByObject(ctx, *account)
+		err := s.UpdateAccountByObject(ctx, &account)
 		if err != nil {
 			return fmt.Errorf("Error while updating account %s: %v", address, err)
 		}
@@ -174,6 +148,52 @@ func (a *Account) getSTBalance( stID string) (float64, error) {
     return stBalance, nil
 }
 
+func (s *SmartContract) CreateTransfer(ctx contractapi.TransactionContextInterface, 
+	transferId string, stId string, fromAddress string, toAddress string, size float64, price float64) error {
+	exists, err := s.TransferExists(ctx, transferId)
+	if err != nil {
+		return err
+	}
+	if exists {
+		return fmt.Errorf("the transferId for transfer %s already exists", transferId)
+	}
+
+	transfer :=  Transfer {
+		FromAddress:   fromAddress,
+		Price:         price,
+		ST_ID:         stId,
+		Size:          size,
+		TransferId:    transferId,
+		ToAddress:     toAddress,
+	}
+
+	transferJSON, err := json.Marshal(transfer)
+	if err != nil {
+		return err
+	}
+
+	return ctx.GetStub().PutState(transferId, transferJSON)
+}
+
+// ReadTransfer returns the transfer stored in the world state with given id.
+func (s *SmartContract) ReadTransfer(ctx contractapi.TransactionContextInterface, transferId string) (*Transfer, error) {
+	transferJSON, err := ctx.GetStub().GetState(transferId)
+	if err != nil {
+		return nil, fmt.Errorf("failed to read from world state: %v", err)
+	}
+	if transferJSON == nil {
+		return nil, fmt.Errorf("the account %s does not exist", transferId)
+	}
+
+	var transfer Transfer
+	err = json.Unmarshal(transferJSON, &transfer)
+	if err != nil {
+		return nil, err
+	}
+
+	return &transfer, nil
+}
+
 
 // CreateAccount issues a new account to the world state with given details.
 func (s *SmartContract) CreateAccount(ctx contractapi.TransactionContextInterface, address string, fiat float64, st_1 float64) error {
@@ -216,6 +236,36 @@ func (s *SmartContract) ReadAccount(ctx contractapi.TransactionContextInterface,
 	}
 
 	return &account, nil
+}
+
+//State에 Account, Transfer 두 가지 유형이 혼합해서 들어있기 때문에 수정이 필요. 사용할 때 Transfer가 ledger에 있으면 오류 반환.
+// GetAllAccounts returns all accounts found in world state
+func (s *SmartContract) GetAllAccounts(ctx contractapi.TransactionContextInterface) (map[string]*Account, error) {
+	// range query with empty string for startKey and endKey does an
+	// open-ended query of all accounts in the chaincode namespace.
+	resultsIterator, err := ctx.GetStub().GetStateByRange("", "")
+	if err != nil {
+		return nil, err
+	}
+	defer resultsIterator.Close()
+
+	accounts := make(map[string]*Account)
+	for resultsIterator.HasNext() {
+		queryResponse, err := resultsIterator.Next()
+		if err != nil {
+			return nil, err
+		}
+
+		var account Account
+		err = json.Unmarshal(queryResponse.Value, &account)
+		if err != nil {
+			return nil, err
+		}
+
+		accounts[account.Address] = &account
+	}
+
+	return accounts, nil
 }
 
 // UpdateAccount updates an existing account in the world state with provaddressed parameters.
@@ -277,34 +327,6 @@ func (s *SmartContract) DeleteAccount(ctx contractapi.TransactionContextInterfac
 }
 
 
-// GetAllAccounts returns all accounts found in world state
-func (s *SmartContract) GetAllAccounts(ctx contractapi.TransactionContextInterface) (map[string]*Account, error) {
-	// range query with empty string for startKey and endKey does an
-	// open-ended query of all accounts in the chaincode namespace.
-	resultsIterator, err := ctx.GetStub().GetStateByRange("", "")
-	if err != nil {
-		return nil, err
-	}
-	defer resultsIterator.Close()
-
-	accounts := make(map[string]*Account)
-	for resultsIterator.HasNext() {
-		queryResponse, err := resultsIterator.Next()
-		if err != nil {
-			return nil, err
-		}
-
-		var account Account
-		err = json.Unmarshal(queryResponse.Value, &account)
-		if err != nil {
-			return nil, err
-		}
-
-		accounts[account.Address] = &account
-	}
-
-	return accounts, nil
-}
 
 // AccountExists returns true when account with given address exists in world state
 func (s *SmartContract) AccountExists(ctx contractapi.TransactionContextInterface, address string) (bool, error) {

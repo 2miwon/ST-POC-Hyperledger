@@ -38,6 +38,16 @@ const (
 var now = time.Now()
 var transactionId = fmt.Sprintf("asset%d", now.Unix()*1e3+int64(now.Nanosecond())/1e6)
 
+type Transfer struct {
+	FromAddress         string  `json:"FromAddress"`
+	Price               float64 `json:"Price"`
+	ST_ID               string  `json:"ST_ID"`
+	Size                float64 `json:"Size"`
+	TransferId          string  `json:"TransferId"`
+	ToAddress           string  `json:"ToAddress"`
+}
+
+
 func main() {
 	// The gRPC client connection should be shared by all Gateway connections to this endpoint
 	clientConnection := newGrpcConnection()
@@ -77,8 +87,10 @@ func main() {
 	contract := network.GetContract(chaincodeName)
 
 	initLedger(contract)
+	createAccounts(contract)
 	getAllAccounts(contract)
-	createAccount(contract)
+	ProcessTransferBatch(contract)
+	getAllAccounts(contract)
 	readAccountByAddress(contract)
 	exampleErrorHandling(contract)
 }
@@ -177,10 +189,22 @@ func getAllAccounts(contract *client.Contract) {
 }
 
 // Submit a transaction synchronously, blocking until it has been committed to the ledger.
-func createAccount(contract *client.Contract) {
+func createAccounts(contract *client.Contract) {
 	fmt.Printf("\n--> Submit Transaction: CreateAccount, creates new account with Address, Fiat, ST_1 \n")
 
-	_, err := contract.SubmitTransaction("CreateAccount", "user2", "1000000", "0")
+	_, err := contract.SubmitTransaction("CreateAccount", "user101", "1000000", "100")
+	if err != nil {
+		panic(fmt.Errorf("failed to submit transaction: %w", err))
+	}
+	_, err := contract.SubmitTransaction("CreateAccount", "user102", "1000000", "100")
+	if err != nil {
+		panic(fmt.Errorf("failed to submit transaction: %w", err))
+	}
+	_, err := contract.SubmitTransaction("CreateAccount", "user103", "1000000", "100")
+	if err != nil {
+		panic(fmt.Errorf("failed to submit transaction: %w", err))
+	}
+	_, err := contract.SubmitTransaction("CreateAccount", "user104", "1000000", "100")
 	if err != nil {
 		panic(fmt.Errorf("failed to submit transaction: %w", err))
 	}
@@ -203,6 +227,20 @@ func readAccountByAddress(contract *client.Contract) {
 
 func submitBatchTransfers(contract *client.Contract) {
 	fmt.Printf("\n--> Submit Transactions in Batch: Make transfer logs, updates account balance")
+	type Transfer struct {
+		FromAddress         string  `json:"FromAddress"`
+		Price               float64 `json:"Price"`
+		ST_ID               string  `json:"ST_ID"`
+		Size                float64 `json:"Size"`
+		TransferId          string  `json:"TransferId"`
+		ToAddress           string  `json:"ToAddress"`
+	}
+	transfer1 := Transfer(FromAddress: "user101", Price: 100, ST_ID: "ST_1", Size: 3, TransferId: "transfer1", ToAddress: "user103")
+	transfer2 := Transfer(FromAddress: "user102", Price: 100, ST_ID: "ST_1", Size: 1, TransferId: "transfer2", ToAddress: "user103")
+	transfer3 := Transfer(FromAddress: "user102", Price: 100, ST_ID: "ST_1", Size: 4, TransferId: "transfer3", ToAddress: "user104")
+	transferBatch := []Transfer{transfer1, transfer2, transfer3}
+	contract.SubmitTransaction("ProcessTransferBatch", transferBatch)
+}
 
 
 
