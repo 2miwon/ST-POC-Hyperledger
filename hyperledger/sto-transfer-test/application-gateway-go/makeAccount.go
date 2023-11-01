@@ -87,11 +87,11 @@ func main() {
 	network := gw.GetNetwork(channelName)
 	contract := network.GetContract(chaincodeName)
 
-	// initLedger(contract)
-	// createAccounts(contract)
+	initLedger(contract)
+	createAccounts(contract)
 	getAllAccounts(contract)
-	submitTransferBatch(contract)
-	getAllAccounts(contract)
+	readAccountByAddress(contract)
+	exampleErrorHandling(contract)
 }
 
 
@@ -224,99 +224,6 @@ func readAccountByAddress(contract *client.Contract) {
 	fmt.Printf("*** Result:%s\n", result)
 }
 
-func submitTransferBatch(contract *client.Contract) {
-	fmt.Printf("\n--> Submit Transactions in Batch: Make transfer logs, updates account balance")
-
-	transfer1 := Transfer{FromAddress: "user101", Price: 100, ST_ID: "ST_1", Size: 3, TransferId: "transfer1", ToAddress: "user103",}
-	transfer2 := Transfer{FromAddress: "user102", Price: 100, ST_ID: "ST_1", Size: 1, TransferId: "transfer2", ToAddress: "user103",}
-	transfer3 := Transfer{FromAddress: "user102", Price: 100, ST_ID: "ST_1", Size: 4, TransferId: "transfer3", ToAddress: "user104",}
-	transferBatch := []Transfer{transfer1, transfer2, transfer3,}
-
-    var transferJSONBatch []string
-    for _, transfer := range transferBatch {
-        transferJSON, err := json.Marshal(transfer)
-        if err != nil {
-            panic(fmt.Errorf("JSON 직렬화 오류:", err))
-        }
-        transferJSONBatch = append(transferJSONBatch, string(transferJSON))
-    }
-	transferBatchString := "[" + strings.Join(transferJSONBatch, ",") + "]"
-
-	_, submissionErr := contract.SubmitTransaction("ProcessTransferBatch", transferBatchString)
-	if submissionErr != nil {
-		panic(fmt.Errorf("failed to submit transaction: %w", submissionErr))
-	}
-}
-
-
-
-
-// Submit transaction asynchronously, blocking until the transaction has been sent to the orderer, and allowing
-// this thread to process the chaincode response (e.g. update a UI) without waiting for the commit notification
-// func transferAssetAsync(contract *client.Contract) {
-// 	fmt.Printf("\n--> Async Submit Transaction: TransferAsset, updates existing asset owner")
-
-// 	submitResult, commit, err := contract.SubmitAsync("TransferAsset", client.WithArguments(assetId, "Mark"))
-// 	if err != nil {
-// 		panic(fmt.Errorf("failed to submit transaction asynchronously: %w", err))
-// 	}
-
-// 	fmt.Printf("\n*** Successfully submitted transaction to transfer ownership from %s to Mark. \n", string(submitResult))
-// 	fmt.Println("*** Waiting for transaction commit.")
-
-// 	if commitStatus, err := commit.Status(); err != nil {
-// 		panic(fmt.Errorf("failed to get commit status: %w", err))
-// 	} else if !commitStatus.Successful {
-// 		panic(fmt.Errorf("transaction %s failed to commit with status: %d", commitStatus.TransactionID, int32(commitStatus.Code)))
-// 	}
-
-// 	fmt.Printf("*** Transaction committed successfully\n")
-// }
-
-// Submit transaction, passing in the wrong number of arguments ,expected to throw an error containing details of any error responses from the smart contract.
-func exampleErrorHandling(contract *client.Contract) {
-	fmt.Println("\n--> Submit Transaction: UpdateAcoount user70, user70 does not exist and should return an error")
-
-	_, err := contract.SubmitTransaction("UpdateAccountByParams", "user70", "1000", "10")
-	if err == nil {
-		panic("******** FAILED to return an error")
-	}
-
-	fmt.Println("*** Successfully caught the error:")
-
-	switch err := err.(type) {
-	case *client.EndorseError:
-		fmt.Printf("Endorse error for transaction %s with gRPC status %v: %s\n", err.TransactionID, status.Code(err), err)
-	case *client.SubmitError:
-		fmt.Printf("Submit error for transaction %s with gRPC status %v: %s\n", err.TransactionID, status.Code(err), err)
-	case *client.CommitStatusError:
-		if errors.Is(err, context.DeadlineExceeded) {
-			fmt.Printf("Timeout waiting for transaction %s commit status: %s", err.TransactionID, err)
-		} else {
-			fmt.Printf("Error obtaining commit status for transaction %s with gRPC status %v: %s\n", err.TransactionID, status.Code(err), err)
-		}
-	case *client.CommitError:
-		fmt.Printf("Transaction %s failed to commit with status %d: %s\n", err.TransactionID, int32(err.Code), err)
-	default:
-		panic(fmt.Errorf("unexpected error type %T: %w", err, err))
-	}
-
-	// Any error that originates from a peer or orderer node external to the gateway will have its details
-	// embedded within the gRPC status error. The following code shows how to extract that.
-	statusErr := status.Convert(err)
-
-	details := statusErr.Details()
-	if len(details) > 0 {
-		fmt.Println("Error Details:")
-
-		for _, detail := range details {
-			switch detail := detail.(type) {
-			case *gateway.ErrorDetail:
-				fmt.Printf("- address: %s, mspId: %s, message: %s\n", detail.Address, detail.MspId, detail.Message)
-			}
-		}
-	}
-}
 
 // Format JSON data
 func formatJSON(data []byte) string {
