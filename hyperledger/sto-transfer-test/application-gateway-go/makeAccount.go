@@ -36,8 +36,6 @@ const (
 	gatewayPeer  = "peer0.org1.example.com"
 )
 
-var now = time.Now()
-var transactionId = fmt.Sprintf("asset%d", now.Unix()*1e3+int64(now.Nanosecond())/1e6)
 
 type Transfer struct {
 	FromAddress         string  `json:"FromAddress"`

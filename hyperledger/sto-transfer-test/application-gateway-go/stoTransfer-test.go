@@ -227,9 +227,9 @@ func readAccountByAddress(contract *client.Contract) {
 func submitTransferBatch(contract *client.Contract) {
 	fmt.Printf("\n--> Submit Transactions in Batch: Make transfer logs, updates account balance")
 
-	transfer1 := Transfer{FromAddress: "user101", Price: 100, ST_ID: "ST_1", Size: 3, TransferId: "transfer1", ToAddress: "user103",}
-	transfer2 := Transfer{FromAddress: "user102", Price: 100, ST_ID: "ST_1", Size: 1, TransferId: "transfer2", ToAddress: "user103",}
-	transfer3 := Transfer{FromAddress: "user102", Price: 100, ST_ID: "ST_1", Size: 4, TransferId: "transfer3", ToAddress: "user104",}
+	transfer1 := Transfer{\"FromAddress\": \"user101\", \"Price\": \"100\", \"ST_ID\": \"ST_1\", \"Size": \"3\", \"TransferId\": \"transfer1\", \"ToAddress\": \"user103\"}
+	transfer2 := Transfer{\"FromAddress\": \"user102\", \"Price\": \"100\", \"ST_ID\": \"ST_1\", \"Size": \"1", \"TransferId\": \"transfer2\", \"ToAddress\": \"user103\"}
+	transfer3 := Transfer{\"FromAddress\": \"user102\", \"Price\": \"100\", \"ST_ID\": \"ST_1\", \"Size": \"4", \"TransferId\": \"transfer3\", \"ToAddress\": \"user104\"}
 	transferBatch := []Transfer{transfer1, transfer2, transfer3,}
 
     var transferJSONBatch []string

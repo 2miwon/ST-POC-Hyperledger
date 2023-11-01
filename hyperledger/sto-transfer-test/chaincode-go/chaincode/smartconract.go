@@ -32,8 +32,8 @@ type Transfer struct {
 // InitLedger adds a base set of accounts to the ledger
 func (s *SmartContract) InitLedger(ctx contractapi.TransactionContextInterface) error {
 	accounts := []Account{
-		{Address: "Admin", Fiat: 100000000, ST_1:10000},
-		{Address: "User1", Fiat: 1000000, ST_1:20},
+		{Address: "admin", Fiat: 100000000, ST_1:10000},
+		{Address: "user1", Fiat: 1000000, ST_1:20},
 	}
 
 	for _, account := range accounts {
@@ -52,53 +52,68 @@ func (s *SmartContract) InitLedger(ctx contractapi.TransactionContextInterface) 
 }
 
 func (s *SmartContract) ProcessTransferBatch(ctx contractapi.TransactionContextInterface, transferJSONBatchString string) (error) {
-
 	accounts, accountErr := s.GetAllAccounts(ctx)
 	if accountErr != nil {
 		return fmt.Errorf("Error while getting accounts: %v", accountErr)
 	}
 
-	var transferJSONBatch []string
-	err := json.Unmarshal([]byte(transferJSONBatchString), &transferJSONBatch)
-	if err != nil {
-		panic(fmt.Errorf("Error while unmarshalling transferBatchString: %w", err))
-	}
+    transfers, _ := s.unmarshalTransferBatchString(transferJSONBatchString)
 
-	for _, transferJSON := range transferJSONBatch {
-		
-		var transfer Transfer
-
-		// JSON을 구조체로 역직렬화
-		jsonErr := json.Unmarshal([]byte(transferJSON), &transfer)
-		if jsonErr != nil {
-			return fmt.Errorf("Error while unmarshalling transfer: %v", jsonErr)
-		}
+	for _, transfer := range transfers {
 
 		err := s.processTransfer(ctx, accounts, transfer)
 		if err != nil {
 			return fmt.Errorf("Error while processing transfer %s: %v", transfer.TransferId, err)
 		}
-
-		// LevelDB에 두가지 데이터타입을 동시에 올렸을 때, 어떻게 구분할지 고민 필요(테이블?)
-
-		// transferJSON, jsonErr := json.Marshal(transfer)
-		// if jsonErr != nil {
-		// 	return fmt.Errorf("Error while marshalling transfer %s: %v", transfer.TransferId, jsonErr)
-		// }
-		// 각 전송 항목을 처리한 후에 PutState를 호출
-		// putStateErr := ctx.GetStub().PutState(transfer.TransferId, transferJSON)
-		// if putStateErr  != nil {
-		// 	return fmt.Errorf("Error while calling PutState for transfer %s: %v", transfer.TransferId, putStateErr) 
-		// }
 	}
+
 	for address, account := range accounts {
 		err := s.UpdateAccountByObject(ctx, *account)
 		if err != nil {
 			return fmt.Errorf("Error while updating account %s: %v", address, err)
 		}
 	}
-	
-	return nil	
+	return nil
+}
+
+func (s *SmartContract) CreateTransfersInBatch(ctx contractapi.TransactionContextInterface, transferJSONBatchString string) (error) {
+	transfers, _ := s.unmarshalTransferBatchString(transferJSONBatchString)
+    for _, transfer := range transfers {
+		transferJSON, jsonErr := json.Marshal(transfer)
+		if jsonErr != nil {
+			return jsonErr
+		}
+		err := ctx.GetStub().PutState(transfer.TransferId, transferJSON)
+		if err != nil {
+			return fmt.Errorf("failed to put to world state. %v", err)
+		}
+    }
+	return nil
+}
+
+
+func (s *SmartContract) unmarshalTransferBatchString(transferBatchString string) ([]Transfer, error) {
+	var transferBatchInterface []map[string]interface{}
+    err := json.Unmarshal([]byte(transferBatchString), &transferBatchInterface)
+	fmt.Println("Parsed JSON data:")
+	if err != nil {
+		return nil, fmt.Errorf("Error while unmarshalling transactionBatchString: %w", err)
+	}
+	var transfers []Transfer
+	for _, item := range transferBatchInterface {
+		transfer := Transfer{
+			FromAddress: item["FromAddress"].(string),
+			Price:       item["Price"].(float64),
+			ST_ID:       item["ST_ID"].(string),
+			Size:        item["Size"].(float64),
+			TransferId:  item["TransferId"].(string),
+			ToAddress:   item["ToAddress"].(string),
+		}
+		if transfer.TransferId != "" {
+			transfers = append(transfers, transfer)
+		}
+	}
+	return transfers, nil
 }
 
 func (s *SmartContract) processTransfer(ctx contractapi.TransactionContextInterface, accounts map[string]*Account, transfer Transfer) (error) {
@@ -110,17 +125,18 @@ func (s *SmartContract) processTransfer(ctx contractapi.TransactionContextInterf
 	stID := transfer.ST_ID
 	fromAccount, _ := accounts[transfer.FromAddress]
 	toAccount, _ := accounts[transfer.ToAddress]
-
 	// Use reflection to access the ST field based on stID
-	fromSTField := reflect.ValueOf(fromAccount).Elem().FieldByName(stID)
-	toSTField := reflect.ValueOf(toAccount).Elem().FieldByName(stID)
+	fromSTField := reflect.ValueOf(&fromAccount).Elem().FieldByName(stID)
+	toSTField := reflect.ValueOf(&toAccount).Elem().FieldByName(stID)
 	fromST := fromSTField.Interface().(float64)
 	toST := toSTField.Interface().(float64)
 	//update st balance
 	fromST -= transfer.Size
 	toST += transfer.Size
-	fromSTField.SetFloat(fromST)
-	toSTField.SetFloat(toST)
+	fromSTValue := reflect.ValueOf(fromST)
+	toSTValue := reflect.ValueOf(toST)
+	fromSTField.Set(fromSTValue)
+	toSTValue.Set(toSTValue)
 	//update fiat balance
 	fromAccount.Fiat += transfer.Size * transfer.Price
 	toAccount.Fiat -= transfer.Size * transfer.Price
@@ -152,7 +168,7 @@ func (s *SmartContract) verifySufficientBalance(ctx contractapi.TransactionConte
 	return nil
 }
 
-func (a *Account) getSTBalance(stID string) (float64, error) {
+func (a Account) getSTBalance(stID string) (float64, error) {
     // Account 구조체를 reflection을 사용하여 탐색
     valueOf := reflect.ValueOf(a)
 
@@ -290,6 +306,34 @@ func (s *SmartContract) GetAllAccounts(ctx contractapi.TransactionContextInterfa
 	return accounts, nil
 }
 
+func (s *SmartContract) GetAllTransfers(ctx contractapi.TransactionContextInterface) (map[string]*Transfer, error) {
+	// range query with empty string for startKey and endKey does an
+	// open-ended query of all accounts in the chaincode namespace.
+	resultsIterator, err := ctx.GetStub().GetStateByRange("", "")
+	if err != nil {
+		return nil, err
+	}
+	defer resultsIterator.Close()
+
+	transfers := make(map[string]*Transfer)
+	for resultsIterator.HasNext() {
+		queryResponse, err := resultsIterator.Next()
+		if err != nil {
+			return nil, err
+		}
+
+		var transfer Transfer
+		err = json.Unmarshal(queryResponse.Value, &transfer)
+		if err != nil {
+			return nil, err
+		}
+
+		transfers[transfer.TransferId] = &transfer
+	}
+
+	return transfers, nil
+}
+
 // UpdateAccount updates an existing account in the world state with provaddressed parameters.
 func (s *SmartContract) UpdateAccountByObject(ctx contractapi.TransactionContextInterface, account Account) error {
 	exists, err := s.AccountExists(ctx, account.Address)
@@ -348,6 +392,10 @@ func (s *SmartContract) DeleteAccount(ctx contractapi.TransactionContextInterfac
 	return ctx.GetStub().DelState(address)
 }
 
+func (s *SmartContract) DeleteTransfer(ctx contractapi.TransactionContextInterface, transferId string) error {
+
+	return ctx.GetStub().DelState(transferId)
+}
 
 
 // AccountExists returns true when account with given address exists in world state
