@@ -235,7 +235,7 @@ func (s *SmartContract) ReadTransfer(ctx contractapi.TransactionContextInterface
 
 
 // CreateAccount issues a new account to the world state with given details.
-func (s *SmartContract) CreateAccount(ctx contractapi.TransactionContextInterface, address string, fiat float64, st_1 float64) error {
+func (s *SmartContract) CreateAccount(ctx contractapi.TransactionContextInterface, address string, fiat float64, st_1 float64) (error) {
 	exists, err := s.AccountExists(ctx, address)
 	if err != nil {
 		return err
@@ -256,6 +256,20 @@ func (s *SmartContract) CreateAccount(ctx contractapi.TransactionContextInterfac
 	}
 
 	return ctx.GetStub().PutState(address, accountJSON)
+}
+
+func (s *SmartContract) CreateAccountTest(ctx contractapi.TransactionContextInterface, jsonString string) (error) {
+	var account Account
+	err := json.Unmarshal([]byte(jsonString), &account)
+	if err != nil {
+		return err
+	}
+	accountJSON, err := json.Marshal(account)
+	if err != nil {
+		return err
+	}
+
+	return ctx.GetStub().PutState(account.Address, accountJSON)
 }
 
 // ReadAccount returns the account stored in the world state with given address.
