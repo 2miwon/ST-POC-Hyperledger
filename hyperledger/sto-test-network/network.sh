@@ -164,6 +164,7 @@ function createOrgs() {
     infoln "Generating certificates using cryptogen tool"
 
     infoln "Creating Org1 Identities"
+
     set -x
     cryptogen generate --config=./organizations/cryptogen/crypto-config-org1.yaml --output="organizations"
     res=$?
@@ -173,6 +174,7 @@ function createOrgs() {
     fi
 
     infoln "Creating Org2 Identities"
+
     set -x
     cryptogen generate --config=./organizations/cryptogen/crypto-config-org2.yaml --output="organizations"
     res=$?
