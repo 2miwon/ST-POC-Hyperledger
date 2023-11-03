@@ -15,7 +15,7 @@
 | -----------|------------------------------|---------|
 | Hyperledger Network | Chaincode 및 Smart Contract와 각 Peer, Channel, Organization 이 구성되어 있는 Hyperledger Network | Go, JavaScript, goLevelDB, Python |
 | MiddleWare (REST-api server) | 웹 프론트엔드 앱에서 보낸 REST 요청을 수집해 Hyperledger의 체인코드를 실행 시켜주는 역할 | Express.js (JavaScript) |
-| MiddleWare (Service DB) | 웹 프론트엔드 앱에서 표현하거나 ledger에 최종 등록(변경불가)하기 전 임시로 orderbook 정보를 저장 | Express.js (JavaScript) |
+| MiddleWare (Service DB) | 웹 프론트엔드 앱에서 표현하거나 ledger에 최종 등록(변경불가)하기 전 임시로 orderbook 정보를 저장 | MySQL |
 | [Front-end WebApp](https://youtube-sto-bay.vercel.app/) | 사용자가 실제로 사용하게 되는 Web2 Application, Vercel로 임시 배포중 | Next.js, (TypeScript) |
 | Google Cloud Platform | Backend Domain Architecture들이 실제로 동작하고 있는 클라우드 컴퓨팅 서비스 |  |
 
