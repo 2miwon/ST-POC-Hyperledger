@@ -5,14 +5,14 @@ const {asyncexecute} = require('./shell');
 var router = express.Router();
 
 // invoke.js
-router.post('/api/post',function(req, res){
-	const requestData = req.body;
-	// 함수 이름과 인수 추출cd
-	const functionName = requestData.function;
-	const functionArgs = requestData.Args;
-	const result = invokeChaincode(functionName, functionArgs);
-	res.status(200).json({ result });    
-});
+// router.post('/api/post',function(req, res){
+// 	const requestData = req.body;
+// 	// 함수 이름과 인수 추출cd
+// 	const functionName = requestData.function;
+// 	const functionArgs = requestData.Args;
+// 	const result = invokeChaincode(functionName, functionArgs);
+// 	res.status(200).json({ result });    
+// });
 
 
 // function invokeChaincode(functionName, args){
@@ -45,9 +45,9 @@ async function invokeChaincode(functionName, args) {
 	switch (functionName) {
 	  case "ProcessTransferBatch":
 		const jsonString = JSON.stringify(args);
-		const escapedJsonString = jsonString.replace(/"/g, '\\"');
+		const escapedJsonString = jsonString.replace(/"/g, '\\\"');
 		invokeCommandString.addFunction("ProcessTransferBatch", escapedJsonString);
-		result = await execute(invokeCommandString.command);
+		result = await asyncexecute(invokeCommandString.command);
 		break;
 	  case "CreateAccount":
 		// Handle CreateAccount case here

@@ -55,6 +55,8 @@ router.post('/api/transfer', async function(req, res, next) {
   const functionName = requestData.function;
   const functionArgs = requestData.Args;
   try {
+    console.log(`functionName: ${functionName}`);
+    console.log(`functionArgs: ${functionArgs}`);
     const result = await invokeChaincode(functionName, functionArgs);
     res.status(200).json(result.stdout);
   } catch (error) {
@@ -62,11 +64,3 @@ router.post('/api/transfer', async function(req, res, next) {
   }
 });
 
-// submit_transfer_batch
-router.get('/api/test/', function(req, res, next) {
-  arg = "[{\\\"FromAddress\\\":\\\"user101\\\",\\\"Price\\\":100,\\\"ST_ID\\\":\\\"ST_1\\\",\\\"Size\\\":3,\\\"TransferId\\\":\\\"transfer1\\\",\\\"ToAddress\\\":\\\"user103\\\"},{\\\"FromAddress\\\":\\\"user102\\\",\\\"Price\\\":100,\\\"ST_ID\\\":\\\"ST_1\\\",\\\"Size\\\":1,\\\"TransferId\\\":\\\"transfer2\\\",\\\"ToAddress\\\":\\\"user103\\\"},{\\\"FromAddress\\\":\\\"user102\\\",\\\"Price\\\":100,\\\"ST_ID\\\":\\\"ST_1\\\",\\\"Size\\\":4,\\\"TransferId\\\":\\\"transfer3\\\",\\\"ToAddress\\\":\\\"user104\\\"}]";
-  const response = invokeChaincode("ProcessTransferBatch", arg);
-  res.status(200).json({ response });
-});
-
-module.exports = router;
