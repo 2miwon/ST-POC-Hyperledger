@@ -1,4 +1,4 @@
-const functionArgs = [{"Address": "user101"}, {"Fiat":"1000000"}, {"ST_1":"100"}];
+const functionArgs = [{"Address": "user101", {"Fiat":"1000000"}, {"ST_1":"100"}];
 
 try {
   // JSON 배열로 변환

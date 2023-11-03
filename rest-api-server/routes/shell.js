@@ -1,6 +1,10 @@
 const { exec } = require('child_process');
 const {NETWORK_DIR} = require('./config');
 const { stdout } = require('process');
+const util = require('util');
+
+const asyncexec = util.promisify(require('child_process').exec);
+
 
 function getEnvString(org, peer, port){
 	return `
@@ -15,17 +19,17 @@ function getEnvString(org, peer, port){
   `;
 }
 
-function execute(command) {
-  exec(getEnvString("org1", "peer0", 7051) + command, (error, stdout, stderr) => {
-      if (error) {
-        console.error(`Error: ${error.message}`);
-        return error.message;
-      }
-    });
-  return stdout;
+
+async function asyncexecute(command) {
+  try {
+    const { stdout, stderr } = await asyncexec(getEnvString("org1", "peer0", 7051) + command);
+    return { stdout, stderr };
+  } catch (error) {
+    throw error;
+  }
 }
 
 module.exports = {
-    execute,
+    asyncexecute,
     getEnvString
 }

@@ -1,6 +1,6 @@
 const express = require('express');
 const {ORG_CONFIG} = require('./config');
-const {execute} = require('./shell');
+const {asyncexecute} = require('./shell');
 
 var router = express.Router();
 
@@ -15,24 +15,47 @@ router.post('/api/post',function(req, res){
 });
 
 
-function invokeChaincode(functionName, args){
+// function invokeChaincode(functionName, args){
+// 	const invokeCommandString = new InvokeCommandString();
+// 	invokeCommandString.addOrderer();
+// 	invokeCommandString.addChannel('channel1');
+// 	invokeCommandString.addOrg('orgConfig1');
+// 	invokeCommandString.addOrg('orgConfig2');
+// 	switch (functionName) {
+// 		case "ProcessTransferBatch":
+// 			const jsonString = JSON.stringify(args);
+// 			const escapedJsonString = jsonString.replace(/"/g, '\\"');
+// 			invokeCommandString.addFunction("ProcessTransferBatch", escapedJsonString);
+// 			break;
+// 		case "CreateAccount":
+// 			break;
+// 	}
+// 	return execute(invokeCommandString.command);
+// 	// TODO
+// }
+
+async function invokeChaincode(functionName, args) {
 	const invokeCommandString = new InvokeCommandString();
 	invokeCommandString.addOrderer();
 	invokeCommandString.addChannel('channel1');
 	invokeCommandString.addOrg('orgConfig1');
 	invokeCommandString.addOrg('orgConfig2');
+	let result;
+  
 	switch (functionName) {
-		case "ProcessTransferBatch":
-			const jsonString = JSON.stringify(args);
-			const escapedJsonString = jsonString.replace(/"/g, '\\"');
-			invokeCommandString.addFunction("ProcessTransferBatch", escapedJsonString);
-			break;
-		case "CreateAccount":
-			break;
+	  case "ProcessTransferBatch":
+		const jsonString = JSON.stringify(args);
+		const escapedJsonString = jsonString.replace(/"/g, '\\"');
+		invokeCommandString.addFunction("ProcessTransferBatch", escapedJsonString);
+		result = await execute(invokeCommandString.command);
+		break;
+	  case "CreateAccount":
+		// Handle CreateAccount case here
+		break;
 	}
-	return execute(invokeCommandString.command);
-	// TODO
-}
+  
+	return result;
+  }
 
 class InvokeCommandString {
 	constructor() {
