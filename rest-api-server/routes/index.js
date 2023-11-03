@@ -64,3 +64,4 @@ router.post('/api/transfer', async function(req, res, next) {
   }
 });
 
+module.exports = router;
