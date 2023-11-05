@@ -75,7 +75,6 @@ peer chaincode invoke -o localhost:7050 --ordererTLSHostnameOverride orderer.exa
 | Parameter | Type | Description                |
 | :-------- | :------- | :------------------------- |
 | `channel` | `string`   |  기본값으로 "channel1" 전달해주세요|
-| `user`    | `string`   |  기본값 "user1"|
  
 ```json
 {   
