@@ -149,17 +149,6 @@ function checkPrereqs() {
 # certificates, and MSP folders that are needed to create the test network in the
 # "organizations/ordererOrganizations" directory.
 
-function makeCert(){
-  infoln "Creating $1 Identities"
-  set -x
-  cryptogen generate --config=./organizations/cryptogen/crypto-config-$1.yaml --output="organizations"
-  res=$?
-  { set +x; } 2>/dev/null
-  if [ $res -ne 0 ]; then
-    fatalln "Failed to generate certificates..."
-  fi
-}
-
 # Create Organization crypto material using cryptogen or CAs
 function createOrgs() {
   if [ -d "organizations/peerOrganizations" ]; then
@@ -173,16 +162,6 @@ function createOrgs() {
       fatalln "cryptogen tool not found. exiting"
     fi
     infoln "Generating certificates using cryptogen tool"
-
-    # makeCert "$agency"
-    # infoln "Creating Agency Identities"
-    # set -x
-    # cryptogen generate --config=./organizations/cryptogen/crypto-config-agency.yaml --output="organizations"
-    # res=$?
-    # { set +x; } 2>/dev/null
-    # if [ $res -ne 0 ]; then
-    #   fatalln "Failed to generate certificates..."
-    # fi
 
     infoln "Creating Org1 Identities"
 
