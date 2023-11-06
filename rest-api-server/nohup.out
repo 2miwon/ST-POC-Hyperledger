@@ -1,0 +1,4 @@
+
+> rest-api-server@0.0.0 start
+> node ./bin/www
+

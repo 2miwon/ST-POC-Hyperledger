@@ -77,4 +77,4 @@ const transferBatch = [
   ];
   
   // 함수 호출로 POST 요청 수행
-  submitTransferBatch(transferBatch);
+  getAllAccounts();
