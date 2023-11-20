@@ -20,6 +20,7 @@ type Account struct {
 	ST_1           float64    `json:"ST_1"`
 }
 
+
 type Transfer struct {
 	FromAddress         string  `json:"FromAddress"`
 	Price               float64 `json:"Price"`
