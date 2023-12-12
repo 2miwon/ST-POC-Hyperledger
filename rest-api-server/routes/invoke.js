@@ -2,38 +2,6 @@ const express = require('express');
 const {ORG_CONFIG} = require('./config');
 const {asyncexecute} = require('./shell');
 
-var router = express.Router();
-
-// invoke.js
-// router.post('/api/post',function(req, res){
-// 	const requestData = req.body;
-// 	// 함수 이름과 인수 추출cd
-// 	const functionName = requestData.function;
-// 	const functionArgs = requestData.Args;
-// 	const result = invokeChaincode(functionName, functionArgs);
-// 	res.status(200).json({ result });    
-// });
-
-
-// function invokeChaincode(functionName, args){
-// 	const invokeCommandString = new InvokeCommandString();
-// 	invokeCommandString.addOrderer();
-// 	invokeCommandString.addChannel('channel1');
-// 	invokeCommandString.addOrg('orgConfig1');
-// 	invokeCommandString.addOrg('orgConfig2');
-// 	switch (functionName) {
-// 		case "ProcessTransferBatch":
-// 			const jsonString = JSON.stringify(args);
-// 			const escapedJsonString = jsonString.replace(/"/g, '\\"');
-// 			invokeCommandString.addFunction("ProcessTransferBatch", escapedJsonString);
-// 			break;
-// 		case "CreateAccount":
-// 			break;
-// 	}
-// 	return execute(invokeCommandString.command);
-// 	// TODO
-// }
-
 async function invokeChaincode(functionName, args) {
 	const invokeCommandString = new InvokeCommandString();
 	invokeCommandString.addOrderer();
@@ -50,8 +18,26 @@ async function invokeChaincode(functionName, args) {
 		result = await asyncexecute(invokeCommandString.command);
 		break;
 	  case "CreateAccount":
+		const account = JSON.stringify(account)(args[0]);
+		invokeCommandString.addFunction("CreateAccount", account);
+		result = await asyncexecute(invokeCommandString.command);
 		// Handle CreateAccount case here
 		break;
+	case "AddFiat":
+		// Assuming args is an array with address and amount for AddFiat
+		const addFiatArgs = args.map(arg => JSON.stringify(arg)).join('","');
+		invokeCommandString.addFunction("AddFiat", addFiatArgs);
+		result = await asyncexecute(invokeCommandString.command);
+		break;
+	case "Mint":
+		// Assuming args is an array with address, stID, and amount for MintSt
+		const mintArgs = args.map(arg => JSON.stringify(arg)).join('","');
+		invokeCommandString.addFunction("MintSt", mintArgs);
+		result = await asyncexecute(invokeCommandString.command);
+		break;
+	default:
+		throw new Error(`Function ${functionName} is not supported`);
+
 	}
   
 	return result;

@@ -16,16 +16,16 @@ type SmartContract struct {
 // golang keeps the order when marshal to json but doesn't order automatically
 type Account struct {
 	Address        string     `json:"Address"`
-	Fiat           float64    `json:"Fiat"`
-	STs     map[string]float64 `json:"STs"`
+	Fiat           int    `json:"Fiat"`
+	STs            map[int]int `json:"STs"`
 }
 
 type Transfer struct {
 	FromAddress         string  `json:"FromAddress"`
-	Price               float64 `json:"Price"`
-	ST_ID               string  `json:"ST_ID"`
-	Size                float64 `json:"Size"`
-	TransferId          string  `json:"TransferId"`
+	Price               int     `json:"Price"`
+	ST_ID               int     `json:"ST_ID"`
+	Size                int     `json:"Size"`
+	TransferId          string     `json:"TransferId"`
 	ToAddress           string  `json:"ToAddress"`
 }
 
@@ -34,6 +34,143 @@ func (s *SmartContract) InitLedger(ctx contractapi.TransactionContextInterface) 
 
 	return nil
 }
+
+// ReadAccount returns the account stored in the world state with given address.
+func (s *SmartContract) ReadAccount(ctx contractapi.TransactionContextInterface, address string) (*Account, error) {
+	accountJSON, err := ctx.GetStub().GetState(address)
+	if err != nil {
+		return nil, fmt.Errorf("failed to read from world state: %v", err)
+	}
+	if accountJSON == nil {
+		return nil, fmt.Errorf("the account %s does not exist", address)
+	}
+
+	var account Account
+	err = json.Unmarshal(accountJSON, &account)
+	if err != nil {
+		return nil, err
+	}
+
+	return &account, nil
+}
+
+// GetAllAccounts returns all accounts found in world state
+func (s *SmartContract) GetAllAccounts(ctx contractapi.TransactionContextInterface) (map[string]*Account, error) {
+	// range query with empty string for startKey and endKey does an
+	// open-ended query of all accounts in the chaincode namespace.
+	resultsIterator, err := ctx.GetStub().GetStateByRange("", "")
+	if err != nil {
+		return nil, err
+	}
+	defer resultsIterator.Close()
+
+	accounts := make(map[string]*Account)
+	for resultsIterator.HasNext() {
+		queryResponse, err := resultsIterator.Next()
+		if err != nil {
+			return nil, err
+		}
+
+		var account Account
+		err = json.Unmarshal(queryResponse.Value, &account)
+		if err != nil {
+			return nil, err
+		}
+
+		accounts[account.Address] = &account
+	}
+
+	return accounts, nil
+}
+
+func (s *SmartContract) CreateAccount(ctx contractapi.TransactionContextInterface, address string) error {
+    exists, err := s.AccountExists(ctx, address)
+    if err != nil {
+        return err
+    }
+    if exists {
+        return fmt.Errorf("the address for account %s already exists", address)
+    }
+
+    account := Account{
+        Address: address,
+        Fiat:    0,
+        STs:     make(map[int]int), // Initialize an empty map for STs
+    }
+
+    accountJSON, err := json.Marshal(account)
+    if err != nil {
+        return err
+    }
+
+    return ctx.GetStub().PutState(address, accountJSON)
+}
+
+func (s *SmartContract) AddFiat(ctx contractapi.TransactionContextInterface, address string, amount int) error {
+    // Check if the account exists
+    accountJSON, err := ctx.GetStub().GetState(address)
+    if err != nil {
+        return fmt.Errorf("failed to read from world state: %v", err)
+    }
+    if accountJSON == nil {
+        return fmt.Errorf("the account %s does not exist", address)
+    }
+
+    // Unmarshal the account JSON to the Account struct
+    var account Account
+    err = json.Unmarshal(accountJSON, &account)
+    if err != nil {
+        return fmt.Errorf("error unmarshalling account JSON: %v", err)
+    }
+
+    // Add the specified amount to the account's fiat balance
+    account.Fiat += amount
+
+    // Marshal the updated account struct back to JSON
+    updatedAccountJSON, err := json.Marshal(account)
+    if err != nil {
+        return fmt.Errorf("error marshalling the updated account: %v", err)
+    }
+
+    // Write the updated account back to the world state
+    return ctx.GetStub().PutState(address, updatedAccountJSON)
+}
+
+
+func (s *SmartContract) Mint(ctx contractapi.TransactionContextInterface, address string, stID int, amount int) error {
+    // Check if the account exists
+    accountJSON, err := ctx.GetStub().GetState(address)
+    if err != nil {
+        return fmt.Errorf("failed to read from world state: %v", err)
+    }
+    if accountJSON == nil {
+        return fmt.Errorf("the account %s does not exist", address)
+    }
+
+    // Unmarshal the account JSON to the Account struct
+    var account Account
+    err = json.Unmarshal(accountJSON, &account)
+    if err != nil {
+        return fmt.Errorf("error unmarshalling account JSON: %v", err)
+    }
+
+    // Check if the ST already exists and update the balance, or add a new entry if it doesn't
+    if _, exists := account.STs[stID]; exists {
+        account.STs[stID] += amount
+    } else {
+        account.STs[stID] = amount
+    }
+
+    // Marshal the updated account struct back to JSON
+    updatedAccountJSON, err := json.Marshal(account)
+    if err != nil {
+        return fmt.Errorf("error marshalling the updated account: %v", err)
+    }
+
+    // Write the updated account back to the world state
+    return ctx.GetStub().PutState(address, updatedAccountJSON)
+}
+
 
 func (s *SmartContract) ProcessTransferBatch(ctx contractapi.TransactionContextInterface, transferJSONBatchString string) (error) {
 	accounts, accountErr := s.GetAllAccounts(ctx)
@@ -82,20 +219,20 @@ func (s *SmartContract) processTransfer(ctx contractapi.TransactionContextInterf
 }
 
 
-func (s *SmartContract) CreateTransfersInBatch(ctx contractapi.TransactionContextInterface, transferJSONBatchString string) (error) {
-	transfers, _ := s.unmarshalTransferBatchString(transferJSONBatchString)
-    for _, transfer := range transfers {
-		transferJSON, jsonErr := json.Marshal(transfer)
-		if jsonErr != nil {
-			return jsonErr
-		}
-		err := ctx.GetStub().PutState(transfer.TransferId, transferJSON)
-		if err != nil {
-			return fmt.Errorf("failed to put to world state. %v", err)
-		}
-    }
-	return nil
-}
+// func (s *SmartContract) CreateTransfersInBatch(ctx contractapi.TransactionContextInterface, transferJSONBatchString string) (error) {
+// 	transfers, _ := s.unmarshalTransferBatchString(transferJSONBatchString)
+//     for _, transfer := range transfers {
+// 		transferJSON, jsonErr := json.Marshal(transfer)
+// 		if jsonErr != nil {
+// 			return jsonErr
+// 		}
+// 		err := ctx.GetStub().PutState(transfer.TransferId, transferJSON)
+// 		if err != nil {
+// 			return fmt.Errorf("failed to put to world state. %v", err)
+// 		}
+//     }
+// 	return nil
+// }
 
 
 func (s *SmartContract) unmarshalTransferBatchString(transferBatchString string) ([]Transfer, error) {
@@ -109,9 +246,9 @@ func (s *SmartContract) unmarshalTransferBatchString(transferBatchString string)
 	for _, item := range transferBatchInterface {
 		transfer := Transfer{
 			FromAddress: item["FromAddress"].(string),
-			Price:       item["Price"].(float64),
+			Price:       item["Price"].(int),
 			ST_ID:       item["ST_ID"].(int),
-			Size:        item["Size"].(float64),
+			Size:        item["Size"].(int),
 			TransferId:  item["TransferId"].(string),
 			ToAddress:   item["ToAddress"].(string),
 		}
@@ -148,7 +285,7 @@ func (s *SmartContract) verifySufficientBalance(ctx contractapi.TransactionConte
 	return nil
 }
 
-func (a Account) getSTBalance(stID string) (float64, error) {
+func (a Account) getSTBalance(stID int) (int, error) {
     // Check if the ST_ID exists in the STs map
     balance, exists := a.STs[stID]
     if !exists {
@@ -161,152 +298,82 @@ func (a Account) getSTBalance(stID string) (float64, error) {
 }
 
 
-//사용 X
-func (s *SmartContract) CreateTransfer(ctx contractapi.TransactionContextInterface, 
-	transferId string, stId string, fromAddress string, toAddress string, size float64, price float64) error {
-	exists, err := s.TransferExists(ctx, transferId)
-	if err != nil {
-		return err
-	}
-	if exists {
-		return fmt.Errorf("the transferId for transfer %s already exists", transferId)
-	}
+// //사용 X
+// func (s *SmartContract) CreateTransfer(ctx contractapi.TransactionContextInterface, 
+// 	transferId string, stId int, fromAddress string, toAddress string, size int, price int) error {
+// 	exists, err := s.TransferExists(ctx, transferId)
+// 	if err != nil {
+// 		return err
+// 	}
+// 	if exists {
+// 		return fmt.Errorf("the transferId for transfer %s already exists", transferId)
+// 	}
 
-	transfer :=  Transfer {
-		FromAddress:   fromAddress,
-		Price:         price,
-		ST_ID:         stId,
-		Size:          size,
-		TransferId:    transferId,
-		ToAddress:     toAddress,
-	}
+// 	transfer :=  Transfer {
+// 		FromAddress:   fromAddress,
+// 		Price:         price,
+// 		ST_ID:         stId,
+// 		Size:          size,
+// 		TransferId:    transferId,
+// 		ToAddress:     toAddress,
+// 	}
 
-	transferJSON, err := json.Marshal(transfer)
-	if err != nil {
-		return err
-	}
+// 	transferJSON, err := json.Marshal(transfer)
+// 	if err != nil {
+// 		return err
+// 	}
 
-	return ctx.GetStub().PutState(transferId, transferJSON)
-}
+// 	return ctx.GetStub().PutState(transferId, transferJSON)
+// }
 
-// ReadTransfer returns the transfer stored in the world state with given id.
-func (s *SmartContract) ReadTransfer(ctx contractapi.TransactionContextInterface, transferId string) (*Transfer, error) {
-	transferJSON, err := ctx.GetStub().GetState(transferId)
-	if err != nil {
-		return nil, fmt.Errorf("failed to read from world state: %v", err)
-	}
-	if transferJSON == nil {
-		return nil, fmt.Errorf("the account %s does not exist", transferId)
-	}
+// // ReadTransfer returns the transfer stored in the world state with given id.
+// func (s *SmartContract) ReadTransfer(ctx contractapi.TransactionContextInterface, transferId string) (*Transfer, error) {
+// 	transferJSON, err := ctx.GetStub().GetState(transferId)
+// 	if err != nil {
+// 		return nil, fmt.Errorf("failed to read from world state: %v", err)
+// 	}
+// 	if transferJSON == nil {
+// 		return nil, fmt.Errorf("the account %s does not exist", transferId)
+// 	}
 
-	var transfer Transfer
-	err = json.Unmarshal(transferJSON, &transfer)
-	if err != nil {
-		return nil, err
-	}
+// 	var transfer Transfer
+// 	err = json.Unmarshal(transferJSON, &transfer)
+// 	if err != nil {
+// 		return nil, err
+// 	}
 
-	return &transfer, nil
-}
+// 	return &transfer, nil
+// }
 
 
-func (s *SmartContract) CreateAccount(ctx contractapi.TransactionContextInterface, address string, fiat float64) error {
-    exists, err := s.AccountExists(ctx, address)
-    if err != nil {
-        return err
-    }
-    if exists {
-        return fmt.Errorf("the address for account %s already exists", address)
-    }
 
-    account := Account{
-        Address: address,
-        Fiat:    fiat,
-        STs:     make(map[string]float64), // Initialize an empty map for STs
-    }
 
-    accountJSON, err := json.Marshal(account)
-    if err != nil {
-        return err
-    }
+// func (s *SmartContract) GetAllTransfers(ctx contractapi.TransactionContextInterface) (map[string]*Transfer, error) {
+// 	// range query with empty string for startKey and endKey does an
+// 	// open-ended query of all accounts in the chaincode namespace.
+// 	resultsIterator, err := ctx.GetStub().GetStateByRange("", "")
+// 	if err != nil {
+// 		return nil, err
+// 	}
+// 	defer resultsIterator.Close()
 
-    return ctx.GetStub().PutState(address, accountJSON)
-}
+// 	transfers := make(map[string]*Transfer)
+// 	for resultsIterator.HasNext() {
+// 		queryResponse, err := resultsIterator.Next()
+// 		if err != nil {
+// 			return nil, err
+// 		}
 
-// ReadAccount returns the account stored in the world state with given address.
-func (s *SmartContract) ReadAccount(ctx contractapi.TransactionContextInterface, address string) (*Account, error) {
-	accountJSON, err := ctx.GetStub().GetState(address)
-	if err != nil {
-		return nil, fmt.Errorf("failed to read from world state: %v", err)
-	}
-	if accountJSON == nil {
-		return nil, fmt.Errorf("the account %s does not exist", address)
-	}
+// 		var transfer Transfer
+// 		err = json.Unmarshal(queryResponse.Value, &transfer)
+// 		if err != nil {
+// 			return nil, err
+// 		}
 
-	var account Account
-	err = json.Unmarshal(accountJSON, &account)
-	if err != nil {
-		return nil, err
-	}
+// 		transfers[transfer.TransferId] = &transfer
+// 	}
 
-	return &account, nil
-}
-
-//State에 Account, Transfer 두 가지 유형이 혼합해서 들어있기 때문에 수정이 필요. 사용할 때 Transfer가 ledger에 있으면 오류 반환.
-// GetAllAccounts returns all accounts found in world state
-func (s *SmartContract) GetAllAccounts(ctx contractapi.TransactionContextInterface) (map[string]*Account, error) {
-	// range query with empty string for startKey and endKey does an
-	// open-ended query of all accounts in the chaincode namespace.
-	resultsIterator, err := ctx.GetStub().GetStateByRange("", "")
-	if err != nil {
-		return nil, err
-	}
-	defer resultsIterator.Close()
-
-	accounts := make(map[string]*Account)
-	for resultsIterator.HasNext() {
-		queryResponse, err := resultsIterator.Next()
-		if err != nil {
-			return nil, err
-		}
-
-		var account Account
-		err = json.Unmarshal(queryResponse.Value, &account)
-		if err != nil {
-			return nil, err
-		}
-
-		accounts[account.Address] = &account
-	}
-
-	return accounts, nil
-}
-
-func (s *SmartContract) GetAllTransfers(ctx contractapi.TransactionContextInterface) (map[string]*Transfer, error) {
-	// range query with empty string for startKey and endKey does an
-	// open-ended query of all accounts in the chaincode namespace.
-	resultsIterator, err := ctx.GetStub().GetStateByRange("", "")
-	if err != nil {
-		return nil, err
-	}
-	defer resultsIterator.Close()
-
-	transfers := make(map[string]*Transfer)
-	for resultsIterator.HasNext() {
-		queryResponse, err := resultsIterator.Next()
-		if err != nil {
-			return nil, err
-		}
-
-		var transfer Transfer
-		err = json.Unmarshal(queryResponse.Value, &transfer)
-		if err != nil {
-			return nil, err
-		}
-
-		transfers[transfer.TransferId] = &transfer
-	}
-
-	return transfers, nil
+// 	return transfers, nil
 }
 
 // UpdateAccount updates an existing account in the world state with provaddressed parameters.
