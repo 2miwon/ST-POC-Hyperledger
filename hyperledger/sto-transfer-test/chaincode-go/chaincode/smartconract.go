@@ -218,6 +218,10 @@ func (s *SmartContract) processTransfer(ctx contractapi.TransactionContextInterf
 
     // Update ST balance
     fromAccount.STs[transfer.ST_ID] -= transfer.Size
+	_, isExists := toAccount.STs[transfer.ST_ID]
+	if !isExists {
+		toAccount.STs[transfer.ST_ID] = 0
+	}
     toAccount.STs[transfer.ST_ID] += transfer.Size
 
     // Update fiat balance
@@ -245,28 +249,38 @@ func (s *SmartContract) processTransfer(ctx contractapi.TransactionContextInterf
 
 
 func (s *SmartContract) unmarshalTransferBatchString(transferBatchString string) ([]Transfer, error) {
-	var transferBatchInterface []map[string]interface{}
+    var transferBatchInterface []map[string]interface{}
     err := json.Unmarshal([]byte(transferBatchString), &transferBatchInterface)
-	fmt.Println("Parsed JSON data:")
-	if err != nil {
-		return nil, fmt.Errorf("Error while unmarshalling transactionBatchString: %w", err)
-	}
-	var transfers []Transfer
-	for _, item := range transferBatchInterface {
-		transfer := Transfer{
-			FromAddress: item["FromAddress"].(string),
-			Price:       item["Price"].(int),
-			ST_ID:       item["ST_ID"].(string),
-			Size:        item["Size"].(int),
-			TransferId:  item["TransferId"].(string),
-			ToAddress:   item["ToAddress"].(string),
-		}
-		if transfer.TransferId != "" {
-			transfers = append(transfers, transfer)
-		}
-	}
-	return transfers, nil
+    if err != nil {
+        return nil, fmt.Errorf("Error while unmarshalling transactionBatchString: %w", err)
+    }
+    var transfers []Transfer
+    for _, item := range transferBatchInterface {
+        // 타입 단언 및 변환을 추가
+        price, ok := item["Price"].(float64)
+        if !ok {
+            return nil, fmt.Errorf("Invalid type for Price")
+        }
+        size, ok := item["Size"].(float64)
+        if !ok {
+            return nil, fmt.Errorf("Invalid type for Size")
+        }
+
+        transfer := Transfer{
+            FromAddress: item["FromAddress"].(string),
+            Price:       int(price), // float64에서 int로 변환
+            ST_ID:       item["ST_ID"].(string),
+            Size:        int(size), // float64에서 int로 변환
+            TransferId:  item["TransferId"].(string),
+            ToAddress:   item["ToAddress"].(string),
+        }
+        if transfer.TransferId != "" {
+            transfers = append(transfers, transfer)
+        }
+    }
+    return transfers, nil
 }
+
 
 
 func (s *SmartContract) verifySufficientBalance(ctx contractapi.TransactionContextInterface, 
