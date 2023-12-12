@@ -1,11 +1,11 @@
-const { exec } = require('child_process');
-const { NETWORK_DIR } = require('./config');
-const { stdout } = require('process');
-const util = require('util');
+import { exec, ExecException } from 'child_process';
+import { NETWORK_DIR } from './config';
+import { stdout } from 'process';
+import util from 'util';
 
-const asyncexec = util.promisify(require('child_process').exec);
+const asyncexec = util.promisify(exec);
 
-function getEnvString(org, peer, port) {
+function getEnvString(org: string, peer: string, port: number): string {
     return `
           export FABRIC_CFG_PATH=/home/admin/st-poc-hyperledger/hyperledger/config/
           export PATH=/home/admin/st-poc-hyperledger/hyperledger/bin:$PATH
@@ -18,7 +18,7 @@ function getEnvString(org, peer, port) {
   `;
 }
 
-async function asyncexecute(command) {
+async function asyncexecute(command: string): Promise<{ stdout: string; stderr: string }> {
     try {
         const { stdout, stderr } = await asyncexec(getEnvString('org1', 'peer0', 7051) + command);
         return { stdout, stderr };
@@ -27,7 +27,4 @@ async function asyncexecute(command) {
     }
 }
 
-module.exports = {
-    asyncexecute,
-    getEnvString,
-};
+export { asyncexecute, getEnvString };

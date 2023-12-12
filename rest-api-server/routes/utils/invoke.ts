@@ -1,8 +1,5 @@
-const express = require('express');
-const { ORG_CONFIG } = require('./config');
-const { asyncexecute } = require('./shell');
-
-var router = express.Router();
+import { ORG_CONFIG } from './config';
+import { asyncexecute } from './shell';
 
 // invoke.js
 // router.post('/api/post',function(req, res){
@@ -33,7 +30,7 @@ var router = express.Router();
 // 	// TODO
 // }
 
-async function invokeChaincode(functionName, args) {
+async function invokeChaincode(functionName: string, args: any[]) {
     const invokeCommandString = new InvokeCommandString();
     invokeCommandString.addOrderer();
     invokeCommandString.addChannel('channel1');
@@ -57,6 +54,8 @@ async function invokeChaincode(functionName, args) {
 }
 
 class InvokeCommandString {
+    command: string;
+
     constructor() {
         this.command = 'peer chaincode invoke';
     }
@@ -68,23 +67,23 @@ class InvokeCommandString {
         return this;
     }
 
-    addChannel(channelName) {
+    addChannel(channelName: string) {
         this.command += ` -C ${channelName} -n basic`;
         return this;
     }
 
-    addOrg(org) {
+    addOrg(org: 'orgConfig1' | 'orgConfig2' | 'ordererConfig') {
         const peerConfig = ORG_CONFIG[org];
         const peerCommand = ` --peerAddresses ${peerConfig.PeerEndpoint} --tlsRootCertFiles "${peerConfig.CryptoPath}${peerConfig.TLSCertPath}"`;
         this.command += peerCommand;
         return this;
     }
 
-    addFunction(functionName, args) {
+    addFunction(functionName: string, args: string) {
         const functionCommand = ` -c'{"function":"${functionName}","Args":["${args}"]}'`;
         this.command += functionCommand;
         return this;
     }
 }
 
-module.exports = { invokeChaincode };
+export { invokeChaincode };

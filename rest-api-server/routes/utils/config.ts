@@ -1,4 +1,6 @@
-require('dotenv').config();
+import dotenv from 'dotenv';
+
+dotenv.config();
 
 const NETWORK_DIR = process.env.NETWORK_DIR;
 const ORG_CONFIG = {
@@ -19,7 +21,4 @@ const ORG_CONFIG = {
     },
 };
 
-module.exports = {
-    NETWORK_DIR,
-    ORG_CONFIG,
-};
+export { NETWORK_DIR, ORG_CONFIG };
