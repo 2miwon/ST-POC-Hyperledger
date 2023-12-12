@@ -17,9 +17,8 @@ type SmartContract struct {
 type Account struct {
 	Address        string     `json:"Address"`
 	Fiat           float64    `json:"Fiat"`
-	ST_1           float64    `json:"ST_1"`
+	STs     map[string]float64 `json:"STs"`
 }
-
 
 type Transfer struct {
 	FromAddress         string  `json:"FromAddress"`
@@ -32,22 +31,6 @@ type Transfer struct {
 
 // InitLedger adds a base set of accounts to the ledger
 func (s *SmartContract) InitLedger(ctx contractapi.TransactionContextInterface) error {
-	accounts := []Account{
-		{Address: "admin", Fiat: 100000000, ST_1:10000},
-		{Address: "user1", Fiat: 1000000, ST_1:20},
-	}
-
-	for _, account := range accounts {
-		accountJSON, err := json.Marshal(account)
-		if err != nil {
-			return err
-		}
-
-		err = ctx.GetStub().PutState(account.Address, accountJSON)
-		if err != nil {
-			return fmt.Errorf("failed to put to world state. %v", err)
-		}
-	}
 
 	return nil
 }
@@ -77,32 +60,27 @@ func (s *SmartContract) ProcessTransferBatch(ctx contractapi.TransactionContextI
 	return nil
 }
 
-func (s *SmartContract) processTransfer(ctx contractapi.TransactionContextInterface, accounts map[string]*Account, transfer Transfer) (error) {
-	//verify balance
-	err := s.verifySufficientBalance(ctx, accounts, transfer)
-	if err != nil {
-		return fmt.Errorf("Error while verifying transfer %s: %v", transfer.TransferId, err)
-	}
-	stID := transfer.ST_ID
-	fromAccount, _ := accounts[transfer.FromAddress]
-	toAccount, _ := accounts[transfer.ToAddress]
-	// Use reflection to access the ST field based on stID
-	fromSTField := reflect.ValueOf(fromAccount).Elem().FieldByName(stID)
-	toSTField := reflect.ValueOf(toAccount).Elem().FieldByName(stID)
-	fromST := fromSTField.Interface().(float64)
-	toST := toSTField.Interface().(float64)
-	//update st balance
-	fromST -= transfer.Size
-	toST += transfer.Size
-	fromSTValue := reflect.ValueOf(fromST)
-	toSTValue := reflect.ValueOf(toST)
-	fromSTField.Set(fromSTValue)
-	toSTField.Set(toSTValue)
-	//update fiat balance
-	fromAccount.Fiat += transfer.Size * transfer.Price
-	toAccount.Fiat -= transfer.Size * transfer.Price
-	return nil
+func (s *SmartContract) processTransfer(ctx contractapi.TransactionContextInterface, accounts map[string]*Account, transfer Transfer) error {
+    // Verify balance
+    err := s.verifySufficientBalance(ctx, accounts, transfer)
+    if err != nil {
+        return fmt.Errorf("Error while verifying transfer %s: %v", transfer.TransferId, err)
+    }
+
+    fromAccount := accounts[transfer.FromAddress]
+    toAccount := accounts[transfer.ToAddress]
+
+    // Update ST balance
+    fromAccount.STs[transfer.ST_ID] -= transfer.Size
+    toAccount.STs[transfer.ST_ID] += transfer.Size
+
+    // Update fiat balance
+    fromAccount.Fiat += transfer.Size * transfer.Price
+    toAccount.Fiat -= transfer.Size * transfer.Price
+
+    return nil
 }
+
 
 func (s *SmartContract) CreateTransfersInBatch(ctx contractapi.TransactionContextInterface, transferJSONBatchString string) (error) {
 	transfers, _ := s.unmarshalTransferBatchString(transferJSONBatchString)
@@ -132,7 +110,7 @@ func (s *SmartContract) unmarshalTransferBatchString(transferBatchString string)
 		transfer := Transfer{
 			FromAddress: item["FromAddress"].(string),
 			Price:       item["Price"].(float64),
-			ST_ID:       item["ST_ID"].(string),
+			ST_ID:       item["ST_ID"].(int),
 			Size:        item["Size"].(float64),
 			TransferId:  item["TransferId"].(string),
 			ToAddress:   item["ToAddress"].(string),
@@ -171,21 +149,17 @@ func (s *SmartContract) verifySufficientBalance(ctx contractapi.TransactionConte
 }
 
 func (a Account) getSTBalance(stID string) (float64, error) {
-    // Account 구조체를 reflection을 사용하여 탐색
-    valueOf := reflect.ValueOf(a)
-
-    // stID에 해당하는 필드를 가져옴
-    field := valueOf.FieldByName(stID)
-
-    if !field.IsValid() {
-        return 0, fmt.Errorf("Field not found: %s", stID)
+    // Check if the ST_ID exists in the STs map
+    balance, exists := a.STs[stID]
+    if !exists {
+        // Return an error if the ST_ID is not found in the map
+        return 0, fmt.Errorf("ST_ID not found: %s", stID)
     }
 
-    // 필드의 값(잔액)을 float64로 변환
-    stBalance := field.Interface().(float64)
-
-    return stBalance, nil
+    // Return the balance for the given ST_ID
+    return balance, nil
 }
+
 
 //사용 X
 func (s *SmartContract) CreateTransfer(ctx contractapi.TransactionContextInterface, 
@@ -235,42 +209,27 @@ func (s *SmartContract) ReadTransfer(ctx contractapi.TransactionContextInterface
 }
 
 
-// CreateAccount issues a new account to the world state with given details.
-func (s *SmartContract) CreateAccount(ctx contractapi.TransactionContextInterface, address string, fiat float64, st_1 float64) (error) {
-	exists, err := s.AccountExists(ctx, address)
-	if err != nil {
-		return err
-	}
-	if exists {
-		return fmt.Errorf("the address for account %s already exists", address)
-	}
+func (s *SmartContract) CreateAccount(ctx contractapi.TransactionContextInterface, address string, fiat float64) error {
+    exists, err := s.AccountExists(ctx, address)
+    if err != nil {
+        return err
+    }
+    if exists {
+        return fmt.Errorf("the address for account %s already exists", address)
+    }
 
-	account := Account{
-		Address: address,
-		Fiat:    fiat,
-		ST_1:    st_1,
-	}
+    account := Account{
+        Address: address,
+        Fiat:    fiat,
+        STs:     make(map[string]float64), // Initialize an empty map for STs
+    }
 
-	accountJSON, err := json.Marshal(account)
-	if err != nil {
-		return err
-	}
+    accountJSON, err := json.Marshal(account)
+    if err != nil {
+        return err
+    }
 
-	return ctx.GetStub().PutState(address, accountJSON)
-}
-
-func (s *SmartContract) CreateAccountTest(ctx contractapi.TransactionContextInterface, jsonString string) (error) {
-	var account Account
-	err := json.Unmarshal([]byte(jsonString), &account)
-	if err != nil {
-		return err
-	}
-	accountJSON, err := json.Marshal(account)
-	if err != nil {
-		return err
-	}
-
-	return ctx.GetStub().PutState(account.Address, accountJSON)
+    return ctx.GetStub().PutState(address, accountJSON)
 }
 
 // ReadAccount returns the account stored in the world state with given address.
@@ -368,31 +327,6 @@ func (s *SmartContract) UpdateAccountByObject(ctx contractapi.TransactionContext
 	}
 
 	return ctx.GetStub().PutState(account.Address, accountJSON)
-}
-
-// UpdateAccount updates an existing account in the world state with provaddressed parameters.
-func (s *SmartContract) UpdateAccountByParams(ctx contractapi.TransactionContextInterface, address string, fiat float64, st_1 float64) error {
-	exists, err := s.AccountExists(ctx, address)
-	if err != nil {
-		return err
-	}
-	if !exists {
-		return fmt.Errorf("the account %s does not exist", address)
-	}
-
-	// overwriting original account with new account
-	account := Account{
-		Address:   address,
-		Fiat:      fiat,
-		ST_1:      st_1,
-	}
-
-	accountJSON, err := json.Marshal(account)
-	if err != nil {
-		return err
-	}
-
-	return ctx.GetStub().PutState(address, accountJSON)
 }
 
 // DeleteAccount deletes an given account from the world state.
