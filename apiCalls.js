@@ -1,7 +1,7 @@
 const axios = require('axios');
 
 function getAllAccounts() {
-    axios.get('http://35.226.148.114:3000/api/channel1')
+    axios.get('http://35.226.148.114:3000/api/mainchannel/accounts')
       .then(response => {
         console.log(response.data);
         return response.data;
@@ -13,26 +13,116 @@ function getAllAccounts() {
   }
 
 function getAccountByAddress(address) {
-axios.get(`http://35.226.148.114:3000/api/channel1/${address}`)
-    .then(response => {
-        console.log(response.data);
-        return response.data;
-    })
-    .catch(error => {
-        console.log(error);
-        throw error;
-    });
+  axios.get(`http://35.226.148.114:3000/api/mainchannel/accounts/${address}`)
+      .then(response => {
+          console.log(response.data);
+          return response.data;
+      })
+      .catch(error => {
+          console.log(error);
+          throw error;
+      });
+  }
+
+function createAccount(address) {
+  const url = 'http://35.226.148.114:3000/api/mainchannel/accounts';
+  const config = {
+      headers: {
+          'Content-Type': 'application/json'
+      }
+  };
+  const requestData = {
+      Args: [address]
+  };
+
+  axios.post(url, requestData, config)
+      .then(response => {
+          console.log('Create account response:', response.data);
+          return response.data;
+      })
+      .catch(error => {
+          console.error('Create account error:', error);
+          throw error;
+      });
 }
 
+// function deleteAccount(address) {
+//   const url = 'http://35.226.148.114:3000/api/mainchannel/accounts/delete';
+//   const config = {
+//       headers: {
+//           'Content-Type': 'application/json'
+//       }
+//   };
+//   const requestData = {
+//       Args: [address]
+//   };
+
+//   axios.post(url, requestData, config)
+//       .then(response => {
+//           console.log('Delete account response:', response.data);
+//           return response.data;
+//       })
+//       .catch(error => {
+//           console.error('Delete account error:', error);
+//           throw error;
+//       });
+// }
+
+
+function addFiat(address, amount) {
+  const url = 'http://35.226.148.114:3000/api/mainchannel/accounts/addfiat';
+  const config = {
+      headers: {
+          'Content-Type': 'application/json'
+      }
+  };
+  const requestData = {
+      Args: [address, amount.toString()]
+  };
+
+  axios.post(url, requestData, config)
+      .then(response => {
+          console.log('Add fiat response:', response.data);
+          return response.data;
+      })
+      .catch(error => {
+          console.error('Add fiat error:', error);
+          throw error;
+      });
+}
+
+function mint(address, stID, amount) {
+  const url = 'http://35.226.148.114:3000/api/mainchannel/accounts/mint';
+  const config = {
+      headers: {
+          'Content-Type': 'application/json'
+      }
+  };
+  const requestData = {
+      Args: [address, stID.toString(), amount.toString()]
+  };
+
+  axios.post(url, requestData, config)
+      .then(response => {
+          console.log('Mint ST response:', response.data);
+          return response.data;
+      })
+      .catch(error => {
+          console.error('Mint ST error:', error);
+          throw error;
+      });
+}
+
+
+
 function submitTransferBatch(transferBatch) {
-    const url = 'http://35.226.148.114:3000/api/transfer';
+    const url = 'http://35.226.148.114:3000/api/mainchannel/transfer';
     const config = {
       headers: {
         'Content-Type': 'application/json'
       }
     };
     const requestData = {
-        function: "ProcessTransferBatch",
         Args: transferBatch
       };
 
@@ -76,5 +166,17 @@ const transferBatch = [
     }
   ];
   
+
   // 함수 호출로 POST 요청 수행
-  getAllAccounts();
+// createAccount("user104")
+// getAllAccounts();
+
+
+// getAllAccounts();
+
+// addFiat("user103", 1000);
+// mint("user103", "ST_1", 50);
+// getAllAccounts();
+
+
+// submitTransferBatch(transferBatch);

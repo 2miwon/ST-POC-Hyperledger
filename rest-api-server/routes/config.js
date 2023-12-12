@@ -1,4 +1,4 @@
-const NETWORK_DIR = '/home/admin/st-poc-hyperledger/hyperledger/sto-test-network';
+const NETWORK_DIR = '/home/admin/st-poc-hyperledger/hyperledger/fabric-samples/test-network';
 const ORG_CONFIG = {
     "orgConfig1": {
         "CryptoPath": `${NETWORK_DIR}/organizations/peerOrganizations/org1.example.com`,

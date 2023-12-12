@@ -8,9 +8,9 @@ const asyncexec = util.promisify(require('child_process').exec);
 
 function getEnvString(org, peer, port){
 	return `
-          export FABRIC_CFG_PATH=/home/admin/st-poc-hyperledger/hyperledger/config/
-          export PATH=/home/admin/st-poc-hyperledger/hyperledger/bin:$PATH
-          export ORDERER_CA=/home/admin/st-poc-hyperledger/hyperledger/organizations/ordererOrganizations/example.com/orderers/orderer.example.com/msp/tlscacerts/tlsca.example.com-cert.pem
+          export FABRIC_CFG_PATH=/home/admin/st-poc-hyperledger/hyperledger/fabric-samples/config/
+          export PATH=/home/admin/st-poc-hyperledger/hyperledger/fabric-samples/bin:$PATH
+          export ORDERER_CA=/home/admin/st-poc-hyperledger/hyperledger/fabric-samples/organizations/ordererOrganizations/example.com/orderers/orderer.example.com/msp/tlscacerts/tlsca.example.com-cert.pem
           export CORE_PEER_TLS_ENABLED=true ; 
           export CORE_PEER_LOCALMSPID="Org1MSP";
           export CORE_PEER_TLS_ROOTCERT_FILE=${NETWORK_DIR}/organizations/peerOrganizations/${org}.example.com/peers/${peer}.${org}.example.com/tls/ca.crt ;

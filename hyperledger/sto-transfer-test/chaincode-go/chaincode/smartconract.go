@@ -1,7 +1,6 @@
 package chaincode
 
 import (
-	"reflect"
 	"encoding/json"
 	"fmt"
 	"github.com/hyperledger/fabric-contract-api-go/contractapi"
@@ -17,13 +16,13 @@ type SmartContract struct {
 type Account struct {
 	Address        string     `json:"Address"`
 	Fiat           int    `json:"Fiat"`
-	STs            map[int]int `json:"STs"`
+	STs            map[string]int `json:"STs"`
 }
 
 type Transfer struct {
 	FromAddress         string  `json:"FromAddress"`
 	Price               int     `json:"Price"`
-	ST_ID               int     `json:"ST_ID"`
+	ST_ID               string     `json:"ST_ID"`
 	Size                int     `json:"Size"`
 	TransferId          string     `json:"TransferId"`
 	ToAddress           string  `json:"ToAddress"`
@@ -32,6 +31,16 @@ type Transfer struct {
 // InitLedger adds a base set of accounts to the ledger
 func (s *SmartContract) InitLedger(ctx contractapi.TransactionContextInterface) error {
 
+	account := Account{Address: "admin", Fiat: 0, STs: map[string]int{"abc": 0}}
+	accountJSON, jsonErr := json.Marshal(account)
+	fmt.Println(accountJSON)
+	if jsonErr != nil {
+		return jsonErr
+	}
+	err := ctx.GetStub().PutState(account.Address, accountJSON)
+	if err != nil {
+		return fmt.Errorf("failed to put to world state. %v", err)
+	}
 	return nil
 }
 
@@ -95,7 +104,7 @@ func (s *SmartContract) CreateAccount(ctx contractapi.TransactionContextInterfac
     account := Account{
         Address: address,
         Fiat:    0,
-        STs:     make(map[int]int), // Initialize an empty map for STs
+        STs:     make(map[string]int), // Initialize an empty map for STs
     }
 
     accountJSON, err := json.Marshal(account)
@@ -137,7 +146,7 @@ func (s *SmartContract) AddFiat(ctx contractapi.TransactionContextInterface, add
 }
 
 
-func (s *SmartContract) Mint(ctx contractapi.TransactionContextInterface, address string, stID int, amount int) error {
+func (s *SmartContract) Mint(ctx contractapi.TransactionContextInterface, address string, stID string, amount int) error {
     // Check if the account exists
     accountJSON, err := ctx.GetStub().GetState(address)
     if err != nil {
@@ -247,7 +256,7 @@ func (s *SmartContract) unmarshalTransferBatchString(transferBatchString string)
 		transfer := Transfer{
 			FromAddress: item["FromAddress"].(string),
 			Price:       item["Price"].(int),
-			ST_ID:       item["ST_ID"].(int),
+			ST_ID:       item["ST_ID"].(string),
 			Size:        item["Size"].(int),
 			TransferId:  item["TransferId"].(string),
 			ToAddress:   item["ToAddress"].(string),
@@ -285,7 +294,7 @@ func (s *SmartContract) verifySufficientBalance(ctx contractapi.TransactionConte
 	return nil
 }
 
-func (a Account) getSTBalance(stID int) (int, error) {
+func (a Account) getSTBalance(stID string) (int, error) {
     // Check if the ST_ID exists in the STs map
     balance, exists := a.STs[stID]
     if !exists {
@@ -374,7 +383,7 @@ func (a Account) getSTBalance(stID int) (int, error) {
 // 	}
 
 // 	return transfers, nil
-}
+// }
 
 // UpdateAccount updates an existing account in the world state with provaddressed parameters.
 func (s *SmartContract) UpdateAccountByObject(ctx contractapi.TransactionContextInterface, account Account) error {
@@ -426,11 +435,11 @@ func (s *SmartContract) AccountExists(ctx contractapi.TransactionContextInterfac
 }
 
 // TransferExists returns true when account with given address exists in world state
-func (s *SmartContract) TransferExists(ctx contractapi.TransactionContextInterface, transferId string) (bool, error) {
-	accountJSON, err := ctx.GetStub().GetState(transferId)
-	if err != nil {
-		return false, fmt.Errorf("failed to read from world state: %v", err)
-	}
+// func (s *SmartContract) TransferExists(ctx contractapi.TransactionContextInterface, transferId string) (bool, error) {
+// 	accountJSON, err := ctx.GetStub().GetState(transferId)
+// 	if err != nil {
+// 		return false, fmt.Errorf("failed to read from world state: %v", err)
+// 	}
 
-	return accountJSON != nil, nil
-}
+// 	return accountJSON != nil, nil
+// }

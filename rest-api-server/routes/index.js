@@ -10,7 +10,7 @@ router.get('/', function(req, res, next) {
   res.render('index', { title: 'Express' });
 });
 
-router.get('/api/accounts', async function(req, res, next) {
+router.get('/api/:channel/accounts', async function(req, res, next) {
   try {
     const result = await asyncexecute(`peer chaincode query -C ${req.params.channel} -n basic -c '{"Args":["GetAllAccounts"]}'`);
     res.status(200).json(result.stdout);
@@ -19,7 +19,7 @@ router.get('/api/accounts', async function(req, res, next) {
   }
 });
 
-router.get('/api/accounts/:address', async function(req, res, next) {
+router.get('/api/:channel/accounts/:address', async function(req, res, next) {
   try {
     const result = await asyncexecute(`peer chaincode query -C ${req.params.channel} -n basic -c '{"Args":["ReadAccount", "${req.params.address}"]}'`);
     res.status(200).json(result.stdout);
@@ -29,39 +29,7 @@ router.get('/api/accounts/:address', async function(req, res, next) {
   }
 });
 
-// router.get('/api/:channel/transfer', function(req, res, next) {
-//   const response = execute(`peer chaincode query -C ${req.params.channel} -n basic -c  '{"Args":["GetAllTransfers"]}'`);
-//   res.status(200).json({ response });
-// });
-
-router.post('/api/accounts/addfiat', async function(req, res, next) {
-  const requestData = req.body;
-  const functionArgs = requestData.Args; // Ensure this contains the address and the amount
-  try {
-    const functionName = "AddFiat";
-    console.log(`functionArgs: ${functionArgs}`);
-    const result = await invokeChaincode(functionName, functionArgs);
-    res.status(200).json(result.stdout);
-  } catch (error) {
-    res.status(500).json({ error: error.message });
-  }
-});
-
-// Route for minting new security tokens
-router.post('/api/accounts/mint', async function(req, res, next) {
-  const requestData = req.body;
-  const functionArgs = requestData.Args; // Ensure this contains the address, stID, and amount
-  try {
-    const functionName = "MintSt";
-    console.log(`functionArgs: ${functionArgs}`);
-    const result = await invokeChaincode(functionName, functionArgs);
-    res.status(200).json(result.stdout);
-  } catch (error) {
-    res.status(500).json({ error: error.message });
-  }
-});
-
-router.post('/api/accounts', async function(req, res, next) {
+router.post('/api/:channel/accounts', async function(req, res, next) {
   const requestData = req.body;
   // 함수 이름과 인수 추출
   const functionArgs = requestData.Args;
@@ -75,7 +43,50 @@ router.post('/api/accounts', async function(req, res, next) {
   }
 });
 
-router.post('/api/transfer', async function(req, res, next) {
+router.post('/api/:channel/accounts/delete', async function(req, res, next) {
+  const requestData = req.body;
+  // 함수 이름과 인수 추출
+  const functionArgs = requestData.Args;
+  try {
+    const functionName = "DeleteAccount";
+    console.log(`functionArgs: ${functionArgs}`);
+    const result = await invokeChaincode(functionName, functionArgs);
+    res.status(200).json(result.stdout);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+
+router.post('/api/:channel/accounts/addfiat', async function(req, res, next) {
+  const requestData = req.body;
+  const functionArgs = requestData.Args; // Ensure this contains the address and the amount
+  try {
+    const functionName = "AddFiat";
+    console.log(`functionArgs: ${functionArgs}`);
+    const result = await invokeChaincode(functionName, functionArgs);
+    res.status(200).json(result.stdout);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Route for minting new security tokens
+router.post('/api/:channel/accounts/mint', async function(req, res, next) {
+  const requestData = req.body;
+  const functionArgs = requestData.Args; // Ensure this contains the address, stID, and amount
+  try {
+    const functionName = "Mint";
+    console.log(`functionArgs: ${functionArgs}`);
+    const result = await invokeChaincode(functionName, functionArgs);
+    res.status(200).json(result.stdout);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+
+router.post('/api/:channel/transfer', async function(req, res, next) {
   const requestData = req.body;
   // 함수 이름과 인수 추출
   const functionArgs = requestData.Args;

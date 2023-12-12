@@ -5,34 +5,46 @@ const {asyncexecute} = require('./shell');
 async function invokeChaincode(functionName, args) {
 	const invokeCommandString = new InvokeCommandString();
 	invokeCommandString.addOrderer();
-	invokeCommandString.addChannel('mychannel');
+	invokeCommandString.addChannel('mainchannel');
 	invokeCommandString.addOrg('orgConfig1');
 	invokeCommandString.addOrg('orgConfig2');
 	let result;
+	let jsonString;
+	let escapedJsonString;
   
 	switch (functionName) {
 	  case "ProcessTransferBatch":
-		const jsonString = JSON.stringify(args);
-		const escapedJsonString = jsonString.replace(/"/g, '\\\"');
+		jsonString = JSON.stringify(args);
+		escapedJsonString = jsonString.replace(/"/g, '\\\"');
 		invokeCommandString.addFunction("ProcessTransferBatch", escapedJsonString);
 		result = await asyncexecute(invokeCommandString.command);
 		break;
 	  case "CreateAccount":
-		const account = JSON.stringify(account)(args[0]);
-		invokeCommandString.addFunction("CreateAccount", account);
+		jsonString = JSON.stringify(args[0]);
+		escapedJsonString = account.replace(/"/g, '');
+		console.log(escapedJsonString);
+		invokeCommandString.addFunction("CreateAccount", escapedJsonString);
+		result = await asyncexecute(invokeCommandString.command);
+		// Handle CreateAccount case here
+		break;
+	case "DeleteAccount":
+		jsonString = JSON.stringify(args[0]);
+		escapedJsonString = address.replace(/"/g, '');
+		console.log(escapedJsonString);
+		invokeCommandString.addFunction("DeleteAccount", escapedJsonString);
 		result = await asyncexecute(invokeCommandString.command);
 		// Handle CreateAccount case here
 		break;
 	case "AddFiat":
 		// Assuming args is an array with address and amount for AddFiat
-		const addFiatArgs = args.map(arg => JSON.stringify(arg)).join('","');
+		const addFiatArgs = args.join('","');
 		invokeCommandString.addFunction("AddFiat", addFiatArgs);
 		result = await asyncexecute(invokeCommandString.command);
 		break;
 	case "Mint":
 		// Assuming args is an array with address, stID, and amount for MintSt
-		const mintArgs = args.map(arg => JSON.stringify(arg)).join('","');
-		invokeCommandString.addFunction("MintSt", mintArgs);
+		const mintArgs = args.join('","');
+		invokeCommandString.addFunction("Mint", mintArgs);
 		result = await asyncexecute(invokeCommandString.command);
 		break;
 	default:
