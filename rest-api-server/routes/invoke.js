@@ -5,7 +5,7 @@ const {asyncexecute} = require('./shell');
 async function invokeChaincode(functionName, args) {
 	const invokeCommandString = new InvokeCommandString();
 	invokeCommandString.addOrderer();
-	invokeCommandString.addChannel('channel1');
+	invokeCommandString.addChannel('mychannel');
 	invokeCommandString.addOrg('orgConfig1');
 	invokeCommandString.addOrg('orgConfig2');
 	let result;
