@@ -29,3 +29,5 @@ external-chaincode/
 
 npm-debug.log
 fabric-samples
+
+*.env

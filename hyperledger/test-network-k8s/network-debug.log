@@ -1,0 +1,24 @@
+The connection to the server localhost:8080 was refused - did you specify the right host or port?
+The connection to the server localhost:8080 was refused - did you specify the right host or port?
+The connection to the server localhost:8080 was refused - did you specify the right host or port?
+The connection to the server localhost:8080 was refused - did you specify the right host or port?
+E1102 18:41:26.069800   45524 memcache.go:265] couldn't get current server API group list: Get "http://localhost:8080/api?timeout=32s": dial tcp [::1]:8080: connect: connection refused
+E1102 18:41:26.070230   45524 memcache.go:265] couldn't get current server API group list: Get "http://localhost:8080/api?timeout=32s": dial tcp [::1]:8080: connect: connection refused
+E1102 18:41:26.071391   45524 memcache.go:265] couldn't get current server API group list: Get "http://localhost:8080/api?timeout=32s": dial tcp [::1]:8080: connect: connection refused
+E1102 18:41:26.072536   45524 memcache.go:265] couldn't get current server API group list: Get "http://localhost:8080/api?timeout=32s": dial tcp [::1]:8080: connect: connection refused
+E1102 18:41:26.073625   45524 memcache.go:265] couldn't get current server API group list: Get "http://localhost:8080/api?timeout=32s": dial tcp [::1]:8080: connect: connection refused
+The connection to the server localhost:8080 was refused - did you specify the right host or port?
+E1102 18:41:26.104049   45525 memcache.go:265] couldn't get current server API group list: Get "http://localhost:8080/api?timeout=32s": dial tcp [::1]:8080: connect: connection refused
+E1102 18:41:26.104587   45525 memcache.go:265] couldn't get current server API group list: Get "http://localhost:8080/api?timeout=32s": dial tcp [::1]:8080: connect: connection refused
+E1102 18:41:26.105662   45525 memcache.go:265] couldn't get current server API group list: Get "http://localhost:8080/api?timeout=32s": dial tcp [::1]:8080: connect: connection refused
+E1102 18:41:26.107879   45525 memcache.go:265] couldn't get current server API group list: Get "http://localhost:8080/api?timeout=32s": dial tcp [::1]:8080: connect: connection refused
+E1102 18:41:26.108545   45525 memcache.go:265] couldn't get current server API group list: Get "http://localhost:8080/api?timeout=32s": dial tcp [::1]:8080: connect: connection refused
+The connection to the server localhost:8080 was refused - did you specify the right host or port?
+E1102 18:41:26.138322   45526 memcache.go:265] couldn't get current server API group list: Get "http://localhost:8080/api?timeout=32s": dial tcp [::1]:8080: connect: connection refused
+E1102 18:41:26.138807   45526 memcache.go:265] couldn't get current server API group list: Get "http://localhost:8080/api?timeout=32s": dial tcp [::1]:8080: connect: connection refused
+E1102 18:41:26.139944   45526 memcache.go:265] couldn't get current server API group list: Get "http://localhost:8080/api?timeout=32s": dial tcp [::1]:8080: connect: connection refused
+E1102 18:41:26.141004   45526 memcache.go:265] couldn't get current server API group list: Get "http://localhost:8080/api?timeout=32s": dial tcp [::1]:8080: connect: connection refused
+E1102 18:41:26.142253   45526 memcache.go:265] couldn't get current server API group list: Get "http://localhost:8080/api?timeout=32s": dial tcp [::1]:8080: connect: connection refused
+The connection to the server localhost:8080 was refused - did you specify the right host or port?
+error: error reading config/org0: no such file or directory
+scripts/utils.sh: line 25: 45503 Terminated: 15          tail -f ${LOG_FILE}
