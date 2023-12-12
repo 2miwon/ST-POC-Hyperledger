@@ -46,27 +46,27 @@ function createAccount(address) {
       });
 }
 
-// function deleteAccount(address) {
-//   const url = 'http://35.226.148.114:3000/api/mainchannel/accounts/delete';
-//   const config = {
-//       headers: {
-//           'Content-Type': 'application/json'
-//       }
-//   };
-//   const requestData = {
-//       Args: [address]
-//   };
+function deleteAccount(address) {
+  const url = 'http://35.226.148.114:3000/api/mainchannel/accounts/delete';
+  const config = {
+      headers: {
+          'Content-Type': 'application/json'
+      }
+  };
+  const requestData = {
+      Args: [address]
+  };
 
-//   axios.post(url, requestData, config)
-//       .then(response => {
-//           console.log('Delete account response:', response.data);
-//           return response.data;
-//       })
-//       .catch(error => {
-//           console.error('Delete account error:', error);
-//           throw error;
-//       });
-// }
+  axios.post(url, requestData, config)
+      .then(response => {
+          console.log('Delete account response:', response.data);
+          return response.data;
+      })
+      .catch(error => {
+          console.error('Delete account error:', error);
+          throw error;
+      });
+}
 
 
 function addFiat(address, amount) {
@@ -113,8 +113,6 @@ function mint(address, stID, amount) {
       });
 }
 
-
-
 function submitTransferBatch(transferBatch) {
     const url = 'http://35.226.148.114:3000/api/mainchannel/transfer';
     const config = {
@@ -123,7 +121,10 @@ function submitTransferBatch(transferBatch) {
       }
     };
     const requestData = {
-        Args: transferBatch
+        Args: transferBatch.map(obj => {
+            let jsonString = JSON.stringify(obj);
+            return jsonString.replace(/"/g, '\\"');
+          })
       };
 
     axios.post(url, requestData, config)
@@ -141,42 +142,40 @@ function submitTransferBatch(transferBatch) {
 
 const transferBatch = [
     {
-      "FromAddress": "user101",
-      "Price": 100,
+      "FromAddress": "testuser1",
+      "Price": 7,
+      "ST_ID": "ST_1",
+      "Size": 7,
+      "TransferId": "transfer1010",
+      "ToAddress": "testuser2"
+    },
+    {
+      "FromAddress": "testuser1",
+      "Price": 3,
       "ST_ID": "ST_1",
       "Size": 3,
-      "TransferId": "transfer201",
-      "ToAddress": "user103"
+      "TransferId": "transfer1003",
+      "ToAddress": "testuser3"
     },
-    {
-      "FromAddress": "user102",
-      "Price": 100,
-      "ST_ID": "ST_1",
-      "Size": 1,
-      "TransferId": "transfer202",
-      "ToAddress": "user103"
-    },
-    {
-      "FromAddress": "user102",
-      "Price": 100,
-      "ST_ID": "ST_1",
-      "Size": 4,
-      "TransferId": "transfer203",
-      "ToAddress": "user104"
-    }
   ];
   
 
   // 함수 호출로 POST 요청 수행
-// createAccount("user104")
+// createAccount("testuser1")
+// deleteAccount("testuser1")
+// createAccount("testuser1")
+// createAccount("testuser2")
+// createAccount("testuser3")
+
+
+// addFiat("testuser1", 1000);
 // getAllAccounts();
+// mint("testuser1", "ST_1", 50);
+// addFiat("testuser2", 1000);
+// mint("testuser2", "ST_1", 100);
+// addFiat("testuser3", 1000);
 
 
-// getAllAccounts();
-
-// addFiat("user103", 1000);
-// mint("user103", "ST_1", 50);
-// getAllAccounts();
-
+getAllAccounts();
 
 // submitTransferBatch(transferBatch);
