@@ -13,15 +13,15 @@ async function invokeChaincode(functionName, args) {
 	let escapedJsonString;
   
 	switch (functionName) {
-	  case "ProcessTransferBatch":
-		jsonString = JSON.stringify(args);
-		escapedJsonString = jsonString.replace(/"/g, '\\\"');
-		invokeCommandString.addFunction("ProcessTransferBatch", escapedJsonString);
-		result = await asyncexecute(invokeCommandString.command);
-		break;
+		case "ProcessTransferBatch":
+			const jsonString = JSON.stringify(args);
+			const escapedJsonString = jsonString.replace(/"/g, '\\\"');
+			invokeCommandString.addFunction("ProcessTransferBatch", escapedJsonString);
+			result = await asyncexecute(invokeCommandString.command);
+			break;
 	  case "CreateAccount":
 		jsonString = JSON.stringify(args[0]);
-		escapedJsonString = account.replace(/"/g, '');
+		escapedJsonString = jsonString.replace(/"/g, '');
 		console.log(escapedJsonString);
 		invokeCommandString.addFunction("CreateAccount", escapedJsonString);
 		result = await asyncexecute(invokeCommandString.command);
@@ -29,7 +29,7 @@ async function invokeChaincode(functionName, args) {
 		break;
 	case "DeleteAccount":
 		jsonString = JSON.stringify(args[0]);
-		escapedJsonString = address.replace(/"/g, '');
+		// escapedJsonString = jsonString.replace(/"/g, '');
 		console.log(escapedJsonString);
 		invokeCommandString.addFunction("DeleteAccount", escapedJsonString);
 		result = await asyncexecute(invokeCommandString.command);
@@ -73,16 +73,17 @@ class InvokeCommandString {
 	}
   
 	addOrg(org) {
-	  const peerConfig = ORG_CONFIG[org];
-	  const peerCommand = ` --peerAddresses ${peerConfig.PeerEndpoint} --tlsRootCertFiles "${peerConfig.CryptoPath}${peerConfig.TLSCertPath}"`;
-	  this.command += peerCommand;
-	  return this;
+		const peerConfig = ORG_CONFIG[org];
+		const peerCommand = ` --peerAddresses ${peerConfig.PeerEndpoint} --tlsRootCertFiles "${peerConfig.CryptoPath}${peerConfig.TLSCertPath}"`;
+		this.command += peerCommand;
+		return this;
 	}
   
 	addFunction(functionName, args) {
-	  const functionCommand = ` -c'{"function":"${functionName}","Args":["${args}"]}'`
-	  this.command += functionCommand;
-	  return this;
+		const functionCommand = ` -c'{"function":"${functionName}","Args":["${args}"]}'`
+		console.log(functionCommand);
+		this.command += functionCommand;
+		return this;
 	}
   
   }

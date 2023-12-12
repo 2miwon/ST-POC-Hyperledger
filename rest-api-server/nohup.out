@@ -2,3 +2,8 @@
 > rest-api-server@0.0.0 start
 > node ./bin/www
 
+
+> rest-api-server@0.0.0 start
+> node ./bin/www app.js
+
+Port 3000 is already in use

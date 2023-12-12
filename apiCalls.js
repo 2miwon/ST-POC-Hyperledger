@@ -116,39 +116,37 @@ function mint(address, stID, amount) {
 function submitTransferBatch(transferBatch) {
     const url = 'http://35.226.148.114:3000/api/mainchannel/transfer';
     const config = {
-      headers: {
-        'Content-Type': 'application/json'
-      }
-    };
-    const requestData = {
-        Args: transferBatch.map(obj => {
-            let jsonString = JSON.stringify(obj);
-            return jsonString.replace(/"/g, '\\"');
-          })
+        headers: {
+          'Content-Type': 'application/json'
+        }
       };
-
-    axios.post(url, requestData, config)
-    .then(response => {
-      // POST 요청 성공 시 처리할 로직
-      console.log('POST 요청 성공:', response.data);
-      return response.data;
-    })
-    .catch(error => {
-      // POST 요청 실패 시 처리할 로직
-      console.error('POST 요청 실패:', error);
-      throw error;
-    });
+      const requestData = {
+          function: "ProcessTransferBatch",
+          Args: transferBatch
+        };
+  
+      axios.post(url, requestData, config)
+      .then(response => {
+        // POST 요청 성공 시 처리할 로직
+        console.log('POST 요청 성공:', response.data);
+        return response.data;
+      })
+      .catch(error => {
+        // POST 요청 실패 시 처리할 로직
+        console.error('POST 요청 실패:', error);
+        throw error;
+      });
 }
 
 const transferBatch = [
-    {
-      "FromAddress": "testuser1",
-      "Price": 7,
-      "ST_ID": "ST_1",
-      "Size": 7,
-      "TransferId": "transfer1010",
-      "ToAddress": "testuser2"
-    },
+    // {
+    //   "FromAddress": "testuser1",
+    //   "Price": 7,
+    //   "ST_ID": "ST_1",
+    //   "Size": 7,
+    //   "TransferId": "transfer1010",
+    //   "ToAddress": "testuser2"
+    // },
     {
       "FromAddress": "testuser1",
       "Price": 3,
