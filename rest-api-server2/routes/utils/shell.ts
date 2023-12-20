@@ -3,7 +3,7 @@ import { NETWORK_DIR } from './config';
 import { stdout } from 'process';
 import util from 'util';
 
-const asyncexec = util.promisify(exec);
+const asyncexec = util.promisify(require('child_process').exec);
 
 function getEnvString(org: string, peer: string, port: number): string {
     return `

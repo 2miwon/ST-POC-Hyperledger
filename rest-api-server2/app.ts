@@ -6,6 +6,7 @@ import cookieParser from 'cookie-parser';
 import path from 'path';
 import indexRouter from './routes/index';
 import usersRouter from './routes/users';
+import testRouter from './routes/test';
 import HttpException from './routes/utils/types';
 const createError = require('http-errors');
 const dotenv = require('dotenv');
@@ -26,6 +27,7 @@ app.use(express.static(path.join(__dirname, 'public')));
 
 app.use('/', indexRouter);
 app.use('/users', usersRouter);
+app.use('/test', testRouter);
 
 app.use((req: Request, res: Response, next: NextFunction) => {
     const error = new HttpException(404, `${req.method} ${req.url} \n no response for routers`);

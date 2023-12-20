@@ -48,25 +48,17 @@ router.get('/api/:channel/:address', async (req: Request, res: Response, next: N
     }
 });
 
-router.get('/api/:channel/transfer', (req: Request, res: Response, next: NextFunction) => {
-    const response = asyncexecute(
-        `peer chaincode query -C ${req.params.channel} -n basic -c  '{"Args":["GetAllTransfers"]}'`
-    );
-    res.status(200).json({ response });
-});
-
-router.post('/api/transfer', async (req: Request, res: Response, next: NextFunction) => {
+router.get('/api/:channel/transfer', async (req: Request, res: Response, next: NextFunction) => {
     const requestData = req.body;
     // 함수 이름과 인수 추출
-    const functionName = requestData.function;
     const functionArgs = requestData.Args;
     try {
-        console.log(`functionName: ${functionName}`);
+        const functionName = 'ProcessTransferBatch';
         console.log(`functionArgs: ${functionArgs}`);
         const result = await invokeChaincode(functionName, functionArgs);
-        res.status(200).json(result);
+        res.status(200).json(result.stdout);
     } catch (error) {
-        res.status(500).json(`error: ${error}`);
+        res.status(500).json(error);
     }
 });
 
