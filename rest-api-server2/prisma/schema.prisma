@@ -1,0 +1,256 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+model Account {
+  id                String  @id
+  type              String
+  provider          String
+  refresh_token     String? @db.Text
+  access_token      String? @db.Text
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String? @db.Text
+  session_state     String?
+  userId            String
+  providerAccountId String
+
+  @@unique([provider, providerAccountId])
+  @@index([userId])
+}
+
+model ActiveOrder {
+  id           Int      @id @default(autoincrement())
+  order_id     Int
+  remain_qty   Float?   @db.Float
+  updated_time DateTime @default(now()) @db.Timestamp(0)
+
+  order Order @relation(fields: [order_id], references: [id])
+
+  @@index([order_id], map: "ActiveOrder_order_id_fkey")
+}
+
+model Announcement {
+  id         Int       @id @default(autoincrement())
+  created_at DateTime  @default(now()) @db.DateTime(0)
+  deleted_at DateTime? @db.DateTime(0)
+  updated_at DateTime  @default(now()) @db.DateTime(0)
+  hit        Int       @default(0)
+  title      String?   @db.Text
+  contents   String?   @db.Text
+}
+
+model ChannelCategory {
+  id   Int    @id @default(autoincrement())
+  name String
+}
+
+model ChannelStatus {
+  id   Int     @id @default(autoincrement())
+  type String? @db.VarChar(255)
+}
+
+model Notification {
+  id         Int       @id @default(autoincrement())
+  created_at DateTime  @default(now()) @db.DateTime(0)
+  user_id    String
+  unread     Boolean   @default(true)
+  deleted_at DateTime? @db.DateTime(0)
+
+  @@index([user_id], map: "user_id")
+}
+
+model Order {
+  id           Int           @id @default(autoincrement())
+  st_id        Int
+  price        Float         @db.Float
+  qty          Float         @db.Float
+  user_id      Int
+  update_time  DateTime      @default(now()) @db.Timestamp(0)
+  created_time DateTime      @default(now()) @db.Timestamp(0)
+  status       Order_status?
+  side         Order_side?
+  type         Order_type?
+
+  activeOrder ActiveOrder[]
+  securityToken SecurityToken @relation(fields: [st_id], references: [id])
+
+  @@index([st_id], map: "ST_id")
+  @@index([user_id], map: "order_user_id")
+}
+
+model OrderBook {
+  id Int @id @default(autoincrement())
+}
+
+model SecurityToken {
+  id            Int     @id @default(autoincrement())
+  ticker_symbol String?
+  issued_supply Int?
+  issued_pct    Int?
+  market_price  Int?
+  price_tick    Int?
+  qty_tick      Int?
+  channel_id    Int?
+
+  securityTokenOffer SecurityTokenOffer?
+  order              Order[]
+  WalletRelationship WalletRelationship[]
+
+  @@index([channel_id], map: "chßannel_id")
+}
+
+model SecurityTokenOffer {
+  id              Int                        @id @default(autoincrement())
+  st_id           Int                        @unique
+  pct             Float?                     @db.Float
+  per             Float?                     @db.Float
+  offer_price     Int?
+  offer_qty       Int?
+  clained_qty     Int?
+  participant_num Int?
+  status          SecurityTokenOffer_status?
+  announced_at    DateTime?                  @db.Timestamp(0)
+  expired_at      DateTime?                  @db.Timestamp(0)
+
+  securityToken SecurityToken        @relation(fields: [st_id], references: [id])
+
+  @@index([st_id], map: "st_id")
+}
+
+model Setting {
+  id       Int     @id @default(autoincrement())
+  user_id  String
+  example1 Boolean @default(false)
+
+  @@index([user_id], map: "user_id")
+}
+
+model Trade {
+  id             Int       @id @default(autoincrement())
+  qty            Float?    @db.Float
+  time           DateTime? @db.Timestamp(0)
+  price          Float?    @db.Float
+  make_order_id  Int?
+  taker_order_id Int?
+
+  @@index([make_order_id], map: "make_order_id")
+  @@index([taker_order_id], map: "taker_order_id")
+}
+
+model User {
+  id              String         @id
+  name            String?
+  email           String?        @unique
+  email_verified  DateTime?
+  image           String?
+  role            User_role?
+  user_type       User_user_type @default(User)
+  username        String?
+  wallet_addr     String?        @db.VarChar(64)
+  created_at      DateTime       @default(now()) @db.DateTime(0)
+  deleted_at      DateTime?      @db.DateTime(0)
+  updated_at      DateTime       @default(now()) @db.DateTime(0)
+  invitation_code String?
+  active          Boolean        @default(false)
+  identification  String?
+  password        String?        @db.Text
+
+  wallet Wallet?
+
+  @@index([wallet_addr], map: "wallet_addr")
+}
+
+model Wallet {
+  addr         String @id @default("") @db.VarChar(64)
+  owner_id     String @unique
+  fiat_balance Int    @default(0)
+
+  relationships WalletRelationship[]
+  user          User                 @relation(fields: [owner_id], references: [id])
+
+  @@index([owner_id], map: "owner_id")
+}
+
+model WalletRelationship {
+  id                Int    @id @default(autoincrement())
+  owner_wallet_addr String @db.VarChar(64)
+  st_id             Int
+  qty               Float  @db.Float
+
+  wallet               Wallet              @relation(fields: [owner_wallet_addr], references: [addr])
+  securityToken        SecurityToken       @relation(fields: [st_id], references: [id])
+
+  @@unique([owner_wallet_addr, st_id], name: "owner_wallet_addr_st_id")
+  @@index([owner_wallet_addr], map: "owner_wallet_addr")
+  @@index([st_id], map: "st_id")
+}
+
+model YoutubeChannel {
+  id          Int                    @id @default(autoincrement())
+  handle      String
+  name        String
+  channel_id  String?
+  status      YoutubeChannel_status?
+  created_at  DateTime               @default(now()) @db.DateTime(0)
+  deleted_at  DateTime?              @db.DateTime(0)
+  updated_at  DateTime               @default(now()) @db.DateTime(0)
+  user_id     String?
+  category_id Int                    @default(0)
+
+  @@index([category_id], map: "channel_category")
+  @@index([user_id], map: "user_id")
+}
+
+model YoutubeVideos {
+  id             Int  @id @default(autoincrement())
+  owner_id       Int
+  view           Int  @default(0)
+  yesterday_view Int? @default(0)
+
+  @@index([owner_id], map: "owner")
+}
+
+enum YoutubeChannel_status {
+  ONSALE
+  TRANSFER
+  SOLDOUT
+}
+
+enum User_role {
+  User
+  Admin
+  Youtuber
+}
+
+enum User_user_type {
+  User
+  Admin
+  Youtuber
+}
+
+enum Order_side {
+  BUY
+  SELL
+}
+
+enum SecurityTokenOffer_status {
+  NONE
+}
+
+enum Order_type {
+  LIMIT
+  MARKET
+}
+
+enum Order_status {
+  NEW
+  FILLED
+  CANCEL
+}

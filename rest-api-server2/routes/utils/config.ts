@@ -1,4 +1,8 @@
-const NETWORK_DIR = '/home/admin/st-poc-hyperledger/hyperledger/fabric-samples/test-network';
+import dotenv from 'dotenv';
+
+dotenv.config();
+
+const NETWORK_DIR = process.env.NETWORK_DIR;
 const ORG_CONFIG = {
     orgConfig1: {
         CryptoPath: `${NETWORK_DIR}/organizations/peerOrganizations/org1.example.com`,
@@ -17,7 +21,4 @@ const ORG_CONFIG = {
     },
 };
 
-module.exports = {
-    NETWORK_DIR,
-    ORG_CONFIG,
-};
+export { NETWORK_DIR, ORG_CONFIG };
