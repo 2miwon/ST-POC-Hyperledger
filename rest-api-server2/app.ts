@@ -14,6 +14,7 @@ const createError = require('http-errors');
 const dotenv = require('dotenv');
 const passport = require('passport');
 const session = require('express-session');
+const cors = require('cors');
 
 // db 연결부인데..
 dotenv.config();
@@ -28,6 +29,7 @@ app.set('view engine', 'jade');
 app.use(morgan('dev'));
 app.use(express.static(path.join(__dirname, 'public')));
 app.use(express.json());
+app.use(cors());
 app.use(express.urlencoded({ extended: false }));
 app.use(cookieParser());
 app.use(
